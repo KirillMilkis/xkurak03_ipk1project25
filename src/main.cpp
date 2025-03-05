@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
-// #include <libnet.h>
+#include <libnet.h>
 #include <pcap.h>
 
 
@@ -84,9 +84,12 @@ int print_active_interfaces() {
 }
 
 
-    
 
 int main(int argc, char *argv[]) {
+
+
+    char errbuf[LIBNET_ERRBUF_SIZE];
+
     Options opts;
     int opt;
 
@@ -127,11 +130,22 @@ int main(int argc, char *argv[]) {
 
     // std::cout << "Interface: " << opts.interface << std::endl;
     // std::cout << "Timeout: " << opts.timeout << std::endl;
+
+    libnet_t *l;
+
+    l = libnet_init(LIBNET_RAW4, NULL, errbuf);
+
+    if ( l == NULL ) {
+        fprintf(stderr, "libnet_init() failed: %s\n", errbuf);
+        exit(EXIT_FAILURE);
+    }
     
 
     signal(SIGINT, interrupt_sniffer);
     signal(SIGQUIT, interrupt_sniffer);
     signal(SIGTERM, interrupt_sniffer);
+
+    
 
 
     for(auto &s : opts.subnet) {
