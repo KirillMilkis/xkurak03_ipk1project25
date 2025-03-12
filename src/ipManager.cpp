@@ -9,27 +9,48 @@
 
 #include "ipManager.h"
 
-// int setSubnet(std::string subnet) {
-//     subnet = subnet;
-// }
+int IpManager::setSubnet(std::string subnet) {
+    subnet = subnet;
+}
 
 char* IpManager::getNextIp() {
-    std::string delimiter = "/";
-    std::string  range = subnet.substr(subnet.find(delimiter) + 1);
-    std::string first_ip = subnet.substr(0, subnet.find(delimiter));
+    if (current_ip.empty()) {
+        std::string delimiter = "/";
+        std::string network_bits = subnet.substr(subnet.find(delimiter) + 1);
+        std::string first_ip = subnet.substr(0, subnet.find(delimiter));
 
-    current_ip = first_ip;
-    current_subnet = std::stoi(range);
+        unsigned int ip_int = ipToInt(first_ip);
 
-    unsigned int ip_int = ipToInt(current_ip);
-    unsigned int mask = (0xFFFFFFFF << (32 - current_subnet)) & 0xFFFFFFFF;  
+        unsigned int current_mask = (0xFFFFFFFF << (32 - std::stoi(network_bits))) & 0xFFFFFFFF;
+        
+        ip_int &= mask;
+        network_ip = ip_int;
 
-    ip_int &= mask;
-    ip_int += 1;
+        std::bitset<32> binary(current_mask);
+        std::cout << "mask " << binary << std::endl;
 
-    std::string next_ip = intToIp(ip_int);
+        current_ip_int = ip_int + 1;
+    } else {
 
-    std::cout << next_ip << "next ip" << "\n";
+        current_ip_int += 1;
+
+        if ((network_ip & current_mask) != (current_ip_int & current_mask)) {
+            std::cout << "ip out of range" << std::endl;
+            return NULL;
+        }
+
+        if (current_ip_int == 0xFFFFFFFF) {
+            std::cout << "ip out of range" << std::endl;
+            return NULL;
+        }
+
+    }
+
+    std::string next_ip = intToIp(current_ip_int);
+
+    current_ip = next_ip;
+
+    return strdup(next_ip.c_str());
 }
 
 unsigned int IpManager::ipToInt(std::string ip) {

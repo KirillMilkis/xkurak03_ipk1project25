@@ -154,8 +154,6 @@ int main(int argc, char *argv[]) {
 
     IpManager ipManager(opts.subnet[0]);
     // ipManager.setSubnet(opts.subnet[0]);
-    ipManager.getNextIp();
-
     // PacketSender sender;
     // sender.GetINF();
 

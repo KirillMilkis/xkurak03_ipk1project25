@@ -29,8 +29,6 @@ void PacketSender::SendARP(char* ipaddr) {
     // Function to send ARP packets
     std::cout << "Sending ARP packet" << std::endl;
 
-
-
     NetworkUtils networkUtils;
 
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
@@ -55,8 +53,8 @@ void PacketSender::SendARP(char* ipaddr) {
     packet_header->hardware_len = 6;
     packet_header->protocol_len = 4;
     packet_header->opcode = htons(1);
-    // packet_header->sender_mac = networkUtils.getMAC(&ifr, sock);
-    // packet_header->sender_ip = networkUtils.getIP(&ifr, sock);
+    packet_header->sender_mac = networkUtils.getMAC(&ifr, sock);
+    packet_header->sender_ip = networkUtils.getIP(&ifr, sock);
     unsigned char broadcast_mac[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
     memcpy(packet_header->target_mac, broadcast_mac, 6);
     // memcpy(packet_header->target_ip, ipaddr);
