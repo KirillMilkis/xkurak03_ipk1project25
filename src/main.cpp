@@ -152,8 +152,12 @@ int main(int argc, char *argv[]) {
 	}
     printf("Interface1:21 %s\n", opts.interface.c_str());  
 
-    PacketSender sender;
-    sender.GetINF();
+    IpManager ipManager(opts.subnet[0]);
+    // ipManager.setSubnet(opts.subnet[0]);
+    ipManager.getNextIp();
+
+    // PacketSender sender;
+    // sender.GetINF();
 
 
     // struct sockaddr_in sin;

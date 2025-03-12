@@ -25,8 +25,11 @@ typedef struct arp_hdr {
     unsigned char target_ip[4];
 } ARP_HDR;
 
+void PacketSender::SendARP(char* ipaddr) {
+    // Function to send ARP packets
+    std::cout << "Sending ARP packet" << std::endl;
 
-void PacketSender::GetINF() {
+
 
     NetworkUtils networkUtils;
 
@@ -40,19 +43,6 @@ void PacketSender::GetINF() {
 
     snprintf (ifr.ifr_name, sizeof (ifr.ifr_name), "%s", "enp0s3");
 
-    networkUtils.getMAC(&ifr, sock);
-    networkUtils.getIP(&ifr, sock);
-
-    close(sock);
-
-}
-
-void PacketSender::SendARP(char* ipaddr) {
-    // Function to send ARP packets
-    std::cout << "Sending ARP packet" << std::endl;
-
-    NetworkUtils networkUtils;
-
     unsigned char* buffer;
     buffer = (unsigned char*)malloc(sizeof(unsigned char) * BUFSIZE);
     memset(buffer, 0, BUFSIZE);
@@ -65,10 +55,13 @@ void PacketSender::SendARP(char* ipaddr) {
     packet_header->hardware_len = 6;
     packet_header->protocol_len = 4;
     packet_header->opcode = htons(1);
-    packet_header->sender_mac = networkUtils.getMAC();
-    packet_header->sender_ip = networkUtils.getIP();
-    packet_header->target_mac = {0, 0, 0, 0, 0, 0};
-    memcpy(pakcet_header->target_ip, ipaddr);
+    // packet_header->sender_mac = networkUtils.getMAC(&ifr, sock);
+    // packet_header->sender_ip = networkUtils.getIP(&ifr, sock);
+    unsigned char broadcast_mac[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+    memcpy(packet_header->target_mac, broadcast_mac, 6);
+    // memcpy(packet_header->target_ip, ipaddr);
+
+    close(sock);
     
     // this->GetINF();
     

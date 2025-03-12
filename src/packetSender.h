@@ -6,7 +6,7 @@ class PacketSender {
 
     public:
 
-        void SendARP();
+        void SendARP(char* ipaddr);
         void SendICMP();
         void GetINF();
 
