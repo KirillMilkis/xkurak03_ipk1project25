@@ -12,6 +12,8 @@
 #include <libnet.h>
 #include <pcap.h>
 
+#include "main.h"
+
 
 void interrupt_sniffer(int signum){
     // Function that handle different interrupt signals like Ctrl + C
@@ -83,27 +85,32 @@ int print_active_interfaces() {
 }
 
 
-void parse_arguments(Options opts, int argc, char *argv[]){
+void parse_arguments(Options* opts, int argc, char *argv[]){
+
+    int opt;
 
     while((opt = getopt_long(argc, argv, ":iws", long_options, NULL)) != -1) {
         switch(opt) {
             case 'i':
                 if (argv[optind] != NULL && argv[optind][0] != '-') {
-                    opts.interface = argv[optind];
+                    printf("Interface: %s\n", argv[optind]);
+                    opts->interface = argv[optind];
+                    printf("Interface: %s\n", opts->interface.c_str());
                 } else{
+                    printf("No interface specified\n");
                     print_active_interfaces();
                 }
                 break;
             case 'w':
                 if (argv[optind] != NULL && argv[optind][0] != '-') {
-                    opts.timeout = atoi(argv[optind]);
+                    opts->timeout = atoi(argv[optind]);
                 } else {
-                    opts.timeout = 5000;
+                    opts->timeout = 5000;
                 }
                 break;
             case 's':
                 if(argv[optind] != NULL && argv[optind][0] != '-') {
-                    opts.subnet.push_back(argv[optind]);
+                    opts->subnet.push_back(argv[optind]);
                 }
                 break;
             case '?':
@@ -126,8 +133,7 @@ int main(int argc, char *argv[]) {
     Options opts;
     int opt;
 
-    parse_arguments(opts, argc, argv);
-
+    parse_arguments(&opts, argc, argv);
 
     if(opts.interface.empty()) {
         print_active_interfaces();
@@ -135,21 +141,26 @@ int main(int argc, char *argv[]) {
 
     u_int16_t src_port, dst_port;
     u_int32_t src_addr, dst_addr;
+    printf("Interface: %s\n", opts.interface.c_str());  
 
 
-	int raw_sc = socket(AF_INET, SOCK_RAW, 0);
+	int raw_sc = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
 	if (raw_sc < 0)
 	{
+        perror("socket() failed");
 		exit(EXIT_FAILURE);
-	}else{
-		return raw_sc;
 	}
+    printf("Interface1:21 %s\n", opts.interface.c_str());  
 
-    struct sockaddr_in sin;
+    PacketSender sender;
+    sender.GetINF();
 
-    sin.sin_family = AF_INET;
-    sin.sin_port = htons(80);
-    sin.sin_addr.s_addr = inet_addr("27.0.0.1");
+
+    // struct sockaddr_in sin;
+
+    // sin.sin_family = AF_INET;
+    // sin.sin_port = htons(80);
+    // sin.sin_addr.s_addr = inet_addr("27.0.0.1");
 
     // std::cout << "Interface: " << opts.interface << std::endl;
     // std::cout << "Timeout: " << opts.timeout << std::endl;

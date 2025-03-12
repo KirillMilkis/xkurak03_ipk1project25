@@ -7,21 +7,11 @@
 #include <net/if.h>
 #include <cstring>
 #include <arpa/inet.h>
+#include <unistd.h>
 
 #include "packetSender.h"
 
 #define BUFSIZE 100
-
-class PacketSender {
-    private:
-
-    public:
-
-        void SendARP();
-        void SendICMP();
-        void GetINF();
-
-};
 
 typedef struct arp_hdr {
     unsigned short hardware_type;
@@ -38,7 +28,9 @@ typedef struct arp_hdr {
 
 void PacketSender::GetINF() {
 
-    int sock = socket(AF_INET, SOCK_RAW, 0);
+    NetworkUtils networkUtils;
+
+    int sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if(sock < 0){
         perror("Socket error");
         exit(1);
@@ -46,35 +38,20 @@ void PacketSender::GetINF() {
 
     struct ifreq ifr;
 
-    strcpy(ifr.ifr_name, "eth0");
+    snprintf (ifr.ifr_name, sizeof (ifr.ifr_name), "%s", "enp0s3");
 
-    if(ioctl(sock, SIOCGIFHWADDR, &ifr) < 0) {
-        perror("Mac error");
-        exit(1);
-    }
-
-    uint8_t mac_addr[6];
-    memcpy(mac_addr, ifr.ifr_hwaddr.sa_data, 6);
-    printf("Mac address: %02x:%02x:%02x:%02x:%02x:%02x\n", mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-
-    if(ioctl(sock, SIOCGIFADDR, &ifr) < 0) {
-        perror("IP error");
-        exit(1);
-    }
-
-    struct sockaddr_in* ipaddr = (struct sockaddr_in*)&ifr.ifr_addr;
-
-    printf("IP ADDRESS %s\n", inet_ntoa(ipaddr->sin_addr));
+    networkUtils.getMAC(&ifr, sock);
+    networkUtils.getIP(&ifr, sock);
 
     close(sock);
 
-    // pcap_if_t *alldevsp;
-
 }
 
-void PacketSender::SendARP() {
+void PacketSender::SendARP(char* ipaddr) {
     // Function to send ARP packets
     std::cout << "Sending ARP packet" << std::endl;
+
+    NetworkUtils networkUtils;
 
     unsigned char* buffer;
     buffer = (unsigned char*)malloc(sizeof(unsigned char) * BUFSIZE);
@@ -86,15 +63,15 @@ void PacketSender::SendARP() {
     packet_header->hardware_type = htons(1);
     packet_header->protocol_type = htons(0x0800);
     packet_header->hardware_len = 6;
-    packet_header->protocol_len = 4
+    packet_header->protocol_len = 4;
     packet_header->opcode = htons(1);
-    packet_header->sender_mac = 
+    packet_header->sender_mac = networkUtils.getMAC();
+    packet_header->sender_ip = networkUtils.getIP();
+    packet_header->target_mac = {0, 0, 0, 0, 0, 0};
+    memcpy(pakcet_header->target_ip, ipaddr);
     
-
-
-
-
-
+    // this->GetINF();
+    
 //     libnet_t *l;  /* the libnet context */
 //   char errbuf[LIBNET_ERRBUF_SIZE], target_ip_addr_str[16];
 //   u_int32_t target_ip_addr, src_ip_addr;
