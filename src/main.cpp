@@ -47,7 +47,6 @@ typedef struct options{
 } Options;
 
 
-
 pcap_if_t* get_interrfaces() {
     pcap_if_t *allinfs;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -84,14 +83,7 @@ int print_active_interfaces() {
 }
 
 
-
-int main(int argc, char *argv[]) {
-
-
-    char errbuf[LIBNET_ERRBUF_SIZE];
-
-    Options opts;
-    int opt;
+void parse_arguments(Options opts, int argc, char *argv[]){
 
     while((opt = getopt_long(argc, argv, ":iws", long_options, NULL)) != -1) {
         switch(opt) {
@@ -104,7 +96,6 @@ int main(int argc, char *argv[]) {
                 break;
             case 'w':
                 if (argv[optind] != NULL && argv[optind][0] != '-') {
-                    // opts.timeout = atoi(optarg);
                     opts.timeout = atoi(argv[optind]);
                 } else {
                     opts.timeout = 5000;
@@ -124,28 +115,60 @@ int main(int argc, char *argv[]) {
         }
     }
 
+
+}
+
+
+int main(int argc, char *argv[]) {
+
+    char errbuf[LIBNET_ERRBUF_SIZE];
+
+    Options opts;
+    int opt;
+
+    parse_arguments(opts, argc, argv);
+
+
     if(opts.interface.empty()) {
         print_active_interfaces();
     }
 
+    u_int16_t src_port, dst_port;
+    u_int32_t src_addr, dst_addr;
+
+
+	int raw_sc = socket(AF_INET, SOCK_RAW, 0);
+	if (raw_sc < 0)
+	{
+		exit(EXIT_FAILURE);
+	}else{
+		return raw_sc;
+	}
+
+    struct sockaddr_in sin;
+
+    sin.sin_family = AF_INET;
+    sin.sin_port = htons(80);
+    sin.sin_addr.s_addr = inet_addr("27.0.0.1");
+
     // std::cout << "Interface: " << opts.interface << std::endl;
     // std::cout << "Timeout: " << opts.timeout << std::endl;
 
-    libnet_t *l;
+    // libnet_t *l;
 
-    l = libnet_init(LIBNET_RAW4, NULL, errbuf);
+    // l = libnet_init(LIBNET_RAW4, NULL, errbuf);
 
-    if ( l == NULL ) {
-        fprintf(stderr, "libnet_init() failed: %s\n", errbuf);
-        exit(EXIT_FAILURE);
-    }
+    // if ( l == NULL ) {
+    //     fprintf(stderr, "libnet_init() failed: %s\n", errbuf);
+    //     exit(EXIT_FAILURE);
+    // }
     
 
     signal(SIGINT, interrupt_sniffer);
     signal(SIGQUIT, interrupt_sniffer);
     signal(SIGTERM, interrupt_sniffer);
 
-    
+
 
 
     for(auto &s : opts.subnet) {
