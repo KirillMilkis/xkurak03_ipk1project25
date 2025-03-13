@@ -1,17 +1,17 @@
 #include "networkUtils.h"
 #include "socketController.h"
-#ifndef PACKETSENDER_H
-#define PACKETSENDER_H
+#ifndef ARP_HANDLER_H
+#define ARP_HANDLER_H
 
-class PacketSender {
+class ARPHandler {
     private:
 
     public:
 
-        void SendARP(char* ipaddr);
+        void SendARP(unsigned char* ipaddr);
         void SendICMP();
         void GetINF();
 
 };
 
-#endif // PACKETSENDER_H
+#endif // ARP_HANDLER_H

@@ -5,9 +5,12 @@
 class IpManager {
     public: 
         IpManager(std::string subnet):
-            subnet(subnet) {}
+            subnet(subnet) {
+                this->current_ip_int = 0;
+                // this->current_ip = (unsigned char*)malloc(sizeof(unsigned char) * 4);
+            }
 
-        char* getNextIp();
+        unsigned char* getNextIp(unsigned char* result_ip);
         int setSubnet(std::string subnet);
 
 
@@ -15,13 +18,13 @@ class IpManager {
         // std::vector<std::string> subnet;
         std::string subnet;
         unsigned int current_ip_int;
-        std::string current_ip;
+        unsigned char* current_ip;
         unsigned int network_ip;
         unsigned int current_mask;
         int current_subnet;
 
         unsigned int ipToInt(std::string ip);
-        char* intToIp(unsigned int ip);
+        unsigned char* intToIp(unsigned int ip_int, unsigned char* result);
 
 };
 

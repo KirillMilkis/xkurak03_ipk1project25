@@ -35,7 +35,9 @@ typedef struct arp_hdr {
     unsigned char target_ip[4];
 } ARP_HDR;
 
-void PacketSender::SendARP(char* ipaddr) {
+void PacketSender::SendARP(unsigned char* ipaddr) {
+
+    printf("ipaddr: %s\n", ipaddr);
     // Function to send ARP packets
     std::cout << "Sending ARP packet" << std::endl;
 
