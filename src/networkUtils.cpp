@@ -15,16 +15,11 @@
 
 // };
 
-unsigned char* NetworkUtils::getMAC(struct ifreq* ifr, int sock) {
-
-    unsigned char mac[6];
-
-    printf("%s interface\n", ifr->ifr_name);
-
+unsigned char* NetworkUtils::getMAC(struct ifreq* ifr, int sock, unsigned char* mac) {
 
     if (ioctl(sock, SIOCGIFHWADDR, ifr) < 0) {
         perror ("ioctl() failed to get source MAC address");
-        return NULL;
+        
       }
 
     memcpy(mac, ifr->ifr_hwaddr.sa_data, 6);
@@ -35,9 +30,7 @@ unsigned char* NetworkUtils::getMAC(struct ifreq* ifr, int sock) {
 }
 
 
-unsigned char* NetworkUtils::getIP(struct ifreq* ifr, int sock){
-
-    unsigned char ipv4[4];
+unsigned char* NetworkUtils::getIP(struct ifreq* ifr, int sock, unsigned char* ipv4) {
 
     if (ioctl(sock, SIOCGIFADDR, ifr) < 0) {
         perror("IP error");
@@ -45,7 +38,7 @@ unsigned char* NetworkUtils::getIP(struct ifreq* ifr, int sock){
     }
 
     struct sockaddr_in* ipaddr = (struct sockaddr_in*)&ifr->ifr_addr;
-    memcpy(ipv4, &ipaddr->sin_addr, 4);
+    memcpy (ipv4, &ipaddr->sin_addr, 4);
 
     printf("IP Address: %d.%d.%d.%d\n",
            ipv4[0], ipv4[1], ipv4[2], ipv4[3]);

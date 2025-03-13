@@ -1,5 +1,7 @@
 #include "networkUtils.h"
-
+#include "socketController.h"
+#ifndef PACKETSENDER_H
+#define PACKETSENDER_H
 
 class PacketSender {
     private:
@@ -11,3 +13,5 @@ class PacketSender {
         void GetINF();
 
 };
+
+#endif // PACKETSENDER_H

@@ -1,10 +1,14 @@
+
+#ifndef IPMANAGER_H
+#define IPMANAGER_H
+
 class IpManager {
     public: 
         IpManager(std::string subnet):
             subnet(subnet) {}
 
         char* getNextIp();
-        int IpManager::setSubnet(std::string subnet)
+        int setSubnet(std::string subnet);
 
 
     private:
@@ -20,3 +24,5 @@ class IpManager {
         std::string intToIp(unsigned int ip);
 
 };
+
+#endif // IPMANAGER_H

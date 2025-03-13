@@ -153,36 +153,14 @@ int main(int argc, char *argv[]) {
     printf("Interface1:21 %s\n", opts.interface.c_str());  
 
     IpManager ipManager(opts.subnet[0]);
-    // ipManager.setSubnet(opts.subnet[0]);
-    // PacketSender sender;
-    // sender.GetINF();
 
+    FrameController frameController(opts.subnet);
 
-    // struct sockaddr_in sin;
-
-    // sin.sin_family = AF_INET;
-    // sin.sin_port = htons(80);
-    // sin.sin_addr.s_addr = inet_addr("27.0.0.1");
-
-    // std::cout << "Interface: " << opts.interface << std::endl;
-    // std::cout << "Timeout: " << opts.timeout << std::endl;
-
-    // libnet_t *l;
-
-    // l = libnet_init(LIBNET_RAW4, NULL, errbuf);
-
-    // if ( l == NULL ) {
-    //     fprintf(stderr, "libnet_init() failed: %s\n", errbuf);
-    //     exit(EXIT_FAILURE);
-    // }
-    
+    frameController.manageARP();
 
     signal(SIGINT, interrupt_sniffer);
     signal(SIGQUIT, interrupt_sniffer);
     signal(SIGTERM, interrupt_sniffer);
-
-
-
 
     for(auto &s : opts.subnet) {
         std::cout << "Subnet: " << s << std::endl;

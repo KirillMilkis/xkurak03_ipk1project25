@@ -1,6 +1,7 @@
 
 #include <iostream>
 #include <string>
+#include <array>
 #include <vector>
 #include <cstdio>
 #include <sys/ioctl.h>
@@ -9,9 +10,18 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+#include <netinet/if_ether.h>  // ETH_P_ALL
+
+#include <linux/if_packet.h>  // sockaddr_ll
+
 #include "packetSender.h"
 
 #define BUFSIZE 100
+#define ETH_FRAME_LEN 1518
+#define ARP_HDR_LEN 28
+#define IP4_HDR_LEN 20
+#define ETHER_HDR_LEN 14
+
 
 typedef struct arp_hdr {
     unsigned short hardware_type;
@@ -30,119 +40,72 @@ void PacketSender::SendARP(char* ipaddr) {
     std::cout << "Sending ARP packet" << std::endl;
 
     NetworkUtils networkUtils;
+    SocketController socketController;
 
-    int sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
-    if(sock < 0){
-        perror("Socket error");
-        exit(1);
-    }
-
+    uint8_t ether_hdr[ETHER_HDR_LEN];
+    struct sockaddr_ll sa;
     struct ifreq ifr;
 
     snprintf (ifr.ifr_name, sizeof (ifr.ifr_name), "%s", "enp0s3");
 
     unsigned char* buffer;
-    buffer = (unsigned char*)malloc(sizeof(unsigned char) * BUFSIZE);
-    memset(buffer, 0, BUFSIZE);
+    buffer = (unsigned char*)malloc(sizeof(unsigned char) * ETH_FRAME_LEN);
+    memset(buffer, 0, ETH_FRAME_LEN);
 
-    // Create a raw socket
+    // Get the index of the network device
 
-    ARP_HDR* packet_header = (ARP_HDR*)malloc(sizeof(ARP_HDR));
-    packet_header->hardware_type = htons(1);
-    packet_header->protocol_type = htons(0x0800);
-    packet_header->hardware_len = 6;
-    packet_header->protocol_len = 4;
-    packet_header->opcode = htons(1);
-    packet_header->sender_mac = networkUtils.getMAC(&ifr, sock);
-    packet_header->sender_ip = networkUtils.getIP(&ifr, sock);
+    memset(&sa, 0, sizeof(struct sockaddr_ll));
+    sa.sll_protocol = htons(ETH_P_ALL);  
+    if ((sa.sll_ifindex = if_nametoindex (ifr.ifr_name)) == 0) {
+        perror ("if_nametoindex() failed to obtain interface index");
+        exit (EXIT_FAILURE);
+      }
+    sa.sll_halen = ETH_ALEN;
+
+    // EHTERNET HEADER
+
+    uint8_t ethDest[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // Broadcaset MAC
+    memcpy(ether_hdr, ethDest, 6);
+    uint8_t ethSource[6] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55}; // MAC
+    memcpy(ether_hdr + 6, ethSource, 6);
+    uint16_t ethType = htons(ETH_P_ARP);  // ARP 
+    memcpy(ether_hdr + 12, &ethType, sizeof(ethType));
+
+    // ARP HEADER
+
+    int sock = socketController.createIoctlSocket();
+
+    ARP_HDR* arp_hdr = (ARP_HDR*)malloc(sizeof(ARP_HDR));
+    arp_hdr->hardware_type = htons(1);
+    arp_hdr->protocol_type = htons(0x0800);
+    arp_hdr->hardware_len = 6;
+    arp_hdr->protocol_len = 4;
+    arp_hdr->opcode = htons(1);
+
+    networkUtils.getMAC(&ifr, sock, arp_hdr->sender_mac);
+    networkUtils.getIP(&ifr, sock, arp_hdr->sender_ip);
+    
     unsigned char broadcast_mac[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-    memcpy(packet_header->target_mac, broadcast_mac, 6);
-    // memcpy(packet_header->target_ip, ipaddr);
+    memcpy(arp_hdr->target_mac, broadcast_mac, 6);
+    memcpy(arp_hdr->target_ip, ipaddr, 4);
 
-    close(sock);
+    std::cout << "target ip: " << ipaddr << std::endl;
+
+    socketController.createIoctlSocket();
+
+    sock = socketController.createRawSocket();
+
+
+    memset(buffer, 0, ETH_FRAME_LEN);  // Заполняем буфер кадра
+    memcpy(buffer, ether_hdr, ETHER_HDR_LEN);
+    memcpy(buffer + ETHER_HDR_LEN, arp_hdr, ARP_HDR_LEN);
+
+    if (sendto(sock, buffer, ETHER_HDR_LEN + ARP_HDR_LEN, 0, (struct sockaddr*)&sa, sizeof(struct sockaddr_ll)) < 0) {
+        perror("sendto() failed");
+        exit(EXIT_FAILURE);
+    }
+
+    socketController.closeIoctlSocket();
     
-    // this->GetINF();
-    
-//     libnet_t *l;  /* the libnet context */
-//   char errbuf[LIBNET_ERRBUF_SIZE], target_ip_addr_str[16];
-//   u_int32_t target_ip_addr, src_ip_addr;
-//   u_int8_t mac_broadcast_addr[6] = {0xff, 0xff, 0xff, 0xff,\
-//           0xff, 0xff},
-//      mac_zero_addr[6] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
-//   struct libnet_ether_addr *src_mac_addr;
-//   int bytes_written;
 
-//   l = libnet_init(LIBNET_LINK, NULL, errbuf);
-//   if ( l == NULL ) {
-//     fprintf(stderr, "libnet_init() failed: %s\n", errbuf);
-//     exit(EXIT_FAILURE);
-//   }
-
-//   /* Getting our own MAC and IP addresses */
-
-//   src_ip_addr = libnet_get_ipaddr4(l);
-//   if ( src_ip_addr == -1 ) {
-//     fprintf(stderr, "Couldn't get own IP address: %s\n",\
-//                     libnet_geterror(l));
-//     libnet_destroy(l);
-//     exit(EXIT_FAILURE);
-//   }
-
-//   src_mac_addr = libnet_get_hwaddr(l);
-//   if ( src_mac_addr == NULL ) {
-//     fprintf(stderr, "Couldn't get own IP address: %s\n",\
-//                     libnet_geterror(l));
-//     libnet_destroy(l);
-//     exit(EXIT_FAILURE);
-//   }
-
-//   /* Getting target IP address */
-
-//   printf("Target IP address: ");
-//   scanf("%15s",target_ip_addr_str);
-
-//   target_ip_addr = libnet_name2addr4(l, target_ip_addr_str,\
-//       LIBNET_DONT_RESOLVE);
-
-//   if ( target_ip_addr == -1 ) {
-//     fprintf(stderr, "Error converting IP address.\n");
-//     libnet_destroy(l);
-//     exit(EXIT_FAILURE);
-//   }
-
-//   /* Building ARP header */
-
-//   if ( libnet_autobuild_arp (ARPOP_REQUEST,\
-//       src_mac_addr->ether_addr_octet,\
-//       (u_int8_t*)(&src_ip_addr), mac_zero_addr,\
-//       (u_int8_t*)(&target_ip_addr), l) == -1)
-//   {
-//     fprintf(stderr, "Error building ARP header: %s\n",\
-//         libnet_geterror(l));
-//     libnet_destroy(l);
-//     exit(EXIT_FAILURE);
-//   }
-
-//   /* Building Ethernet header */
-
-//   if ( libnet_autobuild_ethernet (mac_broadcast_addr,\
-//                           ETHERTYPE_ARP, l) == -1 )
-//   {
-//     fprintf(stderr, "Error building Ethernet header: %s\n",\
-//         libnet_geterror(l));
-//     libnet_destroy(l);
-//     exit(EXIT_FAILURE);
-//   }
-
-//   /* Writing packet */
-
-//   bytes_written = libnet_write(l);
-//   if ( bytes_written != -1 )
-//     printf("%d bytes written.\n", bytes_written);
-//   else
-//     fprintf(stderr, "Error writing packet: %s\n",\
-//         libnet_geterror(l));
-
-//   libnet_destroy(l);
-//   return 0;
 }
