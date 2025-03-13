@@ -126,6 +126,21 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
 }
 
 
+
+int process_ip(){
+
+    if(arpHandler.SendARP(ipManager.getCurrentIp()) == SUCCESS_SENDED){
+        arpHandler.ListenToResponce();
+    } else {
+        printf("ARP packet was not sent\n");
+    }
+    
+
+    return 0;
+
+}
+
+
 int main(int argc, char *argv[]) {
 
     char errbuf[LIBNET_ERRBUF_SIZE];
@@ -156,7 +171,23 @@ int main(int argc, char *argv[]) {
 
     FrameController frameController(opts.subnet);
 
-    frameController.manageARP();
+    ARPHandler arpHandler(raw_sc, opts.interface);
+
+    unsigned char* ipaddr = (unsigned char*)malloc(sizeof(unsigned char) * 4);
+
+    int subnet_num = 0;
+
+    while(subnet[subnet_num] != NULL) {
+        IpManager ipManager(subnet[subnet_num]);
+        while(ipManager.getNextIp() != NULL){
+            std::thread process_ip(process_ip, ipManager.getCurrentIp());
+            process_ip.join();
+        }
+        subnet_num++;
+
+    }
+    
+    printf("ipaddr: %s\n", ipaddr);
 
     signal(SIGINT, interrupt_sniffer);
     signal(SIGQUIT, interrupt_sniffer);

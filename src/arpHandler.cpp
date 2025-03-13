@@ -14,7 +14,7 @@
 
 #include <linux/if_packet.h>  // sockaddr_ll
 
-#include "packetSender.h"
+#include "arpHandler.h"
 
 #define BUFSIZE 100
 #define ETH_FRAME_LEN 1518
@@ -37,7 +37,6 @@ typedef struct arp_hdr {
 
 void PacketSender::SendARP(unsigned char* ipaddr) {
 
-    printf("ipaddr: %s\n", ipaddr);
     // Function to send ARP packets
     std::cout << "Sending ARP packet" << std::endl;
 
@@ -49,9 +48,6 @@ void PacketSender::SendARP(unsigned char* ipaddr) {
     struct ifreq ifr;
 
     snprintf (ifr.ifr_name, sizeof (ifr.ifr_name), "%s", "enp0s3");
-
-    unsigned char* buffer;
-    buffer = (unsigned char*)malloc(sizeof(unsigned char) * ETH_FRAME_LEN);
     memset(buffer, 0, ETH_FRAME_LEN);
 
     // Get the index of the network device
@@ -93,16 +89,12 @@ void PacketSender::SendARP(unsigned char* ipaddr) {
 
     std::cout << "target ip: " << ipaddr << std::endl;
 
-    socketController.createIoctlSocket();
-
-    sock = socketController.createRawSocket();
-
 
     memset(buffer, 0, ETH_FRAME_LEN);  // Заполняем буфер кадра
     memcpy(buffer, ether_hdr, ETHER_HDR_LEN);
     memcpy(buffer + ETHER_HDR_LEN, arp_hdr, ARP_HDR_LEN);
 
-    if (sendto(sock, buffer, ETHER_HDR_LEN + ARP_HDR_LEN, 0, (struct sockaddr*)&sa, sizeof(struct sockaddr_ll)) < 0) {
+    if (sendto(this->socket, buffer, ETHER_HDR_LEN + ARP_HDR_LEN, 0, (struct sockaddr*)&sa, sizeof(struct sockaddr_ll)) < 0) {
         perror("sendto() failed");
         exit(EXIT_FAILURE);
     }
@@ -111,3 +103,19 @@ void PacketSender::SendARP(unsigned char* ipaddr) {
     
 
 }
+
+void arpHandler::ListenToResponce() {
+    while(1){
+        int length = recvfrom(this->socket, this->buffer, BUFSIZE, 0, NULL, NULL);
+        if (length < 0) {
+            perror("recvfrom() failed");
+            exit(EXIT_FAILURE);
+        } else{
+            
+            std::cout << "Received packet" << std::endl;
+        }
+    }
+
+}
+
+

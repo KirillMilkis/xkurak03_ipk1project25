@@ -7,7 +7,8 @@ class IpManager {
         IpManager(std::string subnet):
             subnet(subnet) {
                 this->current_ip_int = 0;
-                // this->current_ip = (unsigned char*)malloc(sizeof(unsigned char) * 4);
+                this->current_ip = (unsigned char*)malloc(sizeof(unsigned char) * 4);
+                memset(this->current_ip, 0, 4);
             }
 
         unsigned char* getNextIp(unsigned char* result_ip);

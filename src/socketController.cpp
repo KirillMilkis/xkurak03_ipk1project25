@@ -18,7 +18,6 @@ int SocketController::createRawSocket() {
 
 }
 
-
 int SocketController::createIoctlSocket() {
 
     int sock = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW);

@@ -9,34 +9,31 @@
 
 #include "ipManager.h"
 
-// int setSubnet(std::string subnet) {
-//     subnet = subnet;
-// }
-
 int IpManager::setSubnet(std::string subnet) {
     this->subnet = subnet;
 }
 
-unsigned char* IpManager::getNextIp(unsigned char* result_ip) {
-    if (this->current_ip_int == 0) {
+unsigned char* IpManager::getNextIp() {
+
+    if (this->current_ip == NULL) {
         std::string delimiter = "/";
         std::string network_bits = subnet.substr(subnet.find(delimiter) + 1);
         std::string first_ip = subnet.substr(0, subnet.find(delimiter));//
 
-        unsigned int ip_int = ipToInt(first_ip);
+        unsigned int ip_int_tmp = ipToInt(first_ip);
 
         this->current_mask = (0xFFFFFFFF << (32 - std::stoi(network_bits))) & 0xFFFFFFFF;
         
-        ip_int &= this->current_mask;
-        this->network_ip = ip_int;
+        ip_int_tmp &= this->current_mask;
+        this->network_ip = ip_int_tmp;
 
         std::bitset<32> binary(this->current_mask);
         std::cout << "mask " << binary << std::endl;
 
-        std::bitset<32> binary2(ip_int);
+        std::bitset<32> binary2(ip_int_tmp);
         std::cout << "ip " << binary2 << std::endl;
 
-        this->current_ip_int = ip_int + 1;
+        this->current_ip_int = ip_int_tmp + 1;
     } else {
 
         this->current_ip_int += 1;
@@ -53,13 +50,11 @@ unsigned char* IpManager::getNextIp(unsigned char* result_ip) {
 
     }
 
-    intToIp(this->current_ip_int, result_ip);
+    intToCurrentIp(this->current_ip_int);
 
-    this->current_ip = result_ip;
+    printf("result_ip: %s\n", this->current_ip);
 
-    printf("result_ip: %s\n", result_ip);
-
-    return result_ip;
+    return this->current_ip;
 }
 
 unsigned int IpManager::ipToInt(std::string ip) {
@@ -69,7 +64,9 @@ unsigned int IpManager::ipToInt(std::string ip) {
     return (a << 24) + (b << 16) + (c << 8) + d;
 }
 
-unsigned char* IpManager::intToIp(unsigned int ip_int, unsigned char* result) {
+unsigned char* IpManager::intToCurrentIp(unsigned int ip_int) {
+
+    unsigned char* result = (unsigned char*)malloc(sizeof(unsigned char) * 4);
 
     for(int i = 0; i < 4; i++) {
         result[i] = static_cast<unsigned char>((ip_int >> (24 - i * 8)) & 0xFF);
@@ -78,7 +75,7 @@ unsigned char* IpManager::intToIp(unsigned int ip_int, unsigned char* result) {
 
     printf("result: %d.%d.%d.%d\n", result[0], result[1], result[2], result[3]);
 
+    this->current_ip = result;
 
-
-    return result;
+    free(result);
 }
