@@ -21,7 +21,7 @@ class IpManager {
         int current_subnet;
 
         unsigned int ipToInt(std::string ip);
-        std::string intToIp(unsigned int ip);
+        char* intToIp(unsigned int ip);
 
 };
 
