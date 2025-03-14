@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <iostream> 
+#include <iostream>
+#include <limits>
 #include <sstream>
 #include <bitset>
 
@@ -18,20 +19,30 @@ unsigned char* IpManager::getNextIp() {
     if (this->current_ip == NULL) {
         printf("current_ip is NULL\n");
         std::string delimiter = "/";
-        std::string network_bits = subnet.substr(subnet.find(delimiter) + 1);
-        std::string first_ip = subnet.substr(0, subnet.find(delimiter));////
+        std::string network_bits;
+        std::string first_ip;
+        int del_place;
+        if((del_place = subnet.find(delimiter)) == std::string::npos) {
+            network_bits = "32";
+            first_ip = subnet;
+        } else{
+            printf("del_place: %d\n", del_place);
+            network_bits = subnet.substr(del_place + 1);
+            first_ip = subnet.substr(0, del_place);////
+        } 
 
         std::cout << "first ip" << first_ip << std::endl;
+        std::cout << "network bits " << network_bits << std::endl;
 
         this->current_ip = (unsigned char*)malloc(sizeof(unsigned char) * 4);
         memset(this->current_ip, 0, 4);
 
-
         unsigned int ip_int_tmp = ipToInt(first_ip);
 
+        std::cout << "network bits" << std::stoi(network_bits) << std::endl;
         this->current_mask = (0xFFFFFFFF << (32 - std::stoi(network_bits))) & 0xFFFFFFFF;
 
-        if(this->current_mask == 0x00000000) {
+        if(this->current_mask == 0xFFFFFFFF) {
             
             this->current_ip_int = ip_int_tmp;
             
