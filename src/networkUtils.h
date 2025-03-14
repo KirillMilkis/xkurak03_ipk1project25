@@ -9,8 +9,8 @@ class NetworkUtils {
     private:
 
     public:
-    unsigned char* getIP(struct ifreq* ifr, int sock, unsigned char* ipv4);
-    unsigned char* getMAC(struct ifreq* ifr, int sock, unsigned char* mac);
+    static unsigned char* getIP(struct ifreq* ifr, int sock, unsigned char* ipv4);
+    static unsigned char* getMAC(struct ifreq* ifr, int sock, unsigned char* mac);
 };
 
 

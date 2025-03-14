@@ -6,15 +6,6 @@
 #include <net/if.h>
 #include <netinet/in.h>
 
-
-// class NetworkUtils {    
-//     public:
-
-//         static std::string getMAC(struct ifreq* ifr);
-//         static std::string getIP();
-
-// };
-
 unsigned char* NetworkUtils::getMAC(struct ifreq* ifr, int sock, unsigned char* mac) {
 
     if (ioctl(sock, SIOCGIFHWADDR, ifr) < 0) {

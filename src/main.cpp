@@ -11,6 +11,7 @@
 #include <iostream>
 #include <libnet.h>
 #include <pcap.h>
+#include <thread>
 
 #include "main.h"
 
@@ -125,16 +126,16 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
 
 }
 
+#define SUCCESS_SENDED 0
 
+int process_ip(unsigned char* ipaddr, ARPHandler& arpHandler) {
 
-int process_ip(){
-
-    if(arpHandler.SendARP(ipManager.getCurrentIp()) == SUCCESS_SENDED){
+    if(arpHandler.SendARP(ipaddr) == SUCCESS_SENDED){
+        printf("ARP packet was sent\n");
         arpHandler.ListenToResponce();
     } else {
         printf("ARP packet was not sent\n");
     }
-    
 
     return 0;
 
@@ -149,6 +150,10 @@ int main(int argc, char *argv[]) {
     int opt;
 
     parse_arguments(&opts, argc, argv);
+
+    signal(SIGINT, interrupt_sniffer);
+    signal(SIGQUIT, interrupt_sniffer);
+    signal(SIGTERM, interrupt_sniffer);
 
     if(opts.interface.empty()) {
         print_active_interfaces();
@@ -167,35 +172,26 @@ int main(int argc, char *argv[]) {
 	}
     printf("Interface1:21 %s\n", opts.interface.c_str());  
 
-    IpManager ipManager(opts.subnet[0]);
-
-    FrameController frameController(opts.subnet);
-
-    ARPHandler arpHandler(raw_sc, opts.interface);
-
-    unsigned char* ipaddr = (unsigned char*)malloc(sizeof(unsigned char) * 4);
-
     int subnet_num = 0;
-
-    while(subnet[subnet_num] != NULL) {
-        IpManager ipManager(subnet[subnet_num]);
+    
+    while(!opts.subnet[subnet_num].empty()) {
+        IpManager ipManager(opts.subnet[subnet_num]);
+        printf("111111\n");
         while(ipManager.getNextIp() != NULL){
-            std::thread process_ip(process_ip, ipManager.getCurrentIp());
-            process_ip.join();
+            printf("222222\n");
+            ARPHandler arpHandler(opts.interface);
+            
+            std::thread process_ip_thread([&]() {
+                process_ip(ipManager.getCurrentIp(), arpHandler);
+            });
+
+            process_ip_thread.join();
         }
+       
         subnet_num++;
 
     }
-    
-    printf("ipaddr: %s\n", ipaddr);
 
-    signal(SIGINT, interrupt_sniffer);
-    signal(SIGQUIT, interrupt_sniffer);
-    signal(SIGTERM, interrupt_sniffer);
-
-    for(auto &s : opts.subnet) {
-        std::cout << "Subnet: " << s << std::endl;
-    }
 
     return 0;
 }

@@ -1,9 +1,5 @@
 #include "socketController.h"
 
-
-
-
-
 int SocketController::createRawSocket() {
 
     int sock = socket(AF_PACKET, SOCK_RAW,  htons(ETH_P_ARP));

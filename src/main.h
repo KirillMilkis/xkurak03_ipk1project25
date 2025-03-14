@@ -3,10 +3,8 @@
 #define MAIN_H
 
 
-#include "packetSender.h"
+#include "arpHandler.h"
 #include "ipManager.h"
-#include "frameController.h"
-
 
 
 #endif // MAIN_H

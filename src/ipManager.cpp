@@ -16,24 +16,40 @@ int IpManager::setSubnet(std::string subnet) {
 unsigned char* IpManager::getNextIp() {
 
     if (this->current_ip == NULL) {
+        printf("current_ip is NULL\n");
         std::string delimiter = "/";
         std::string network_bits = subnet.substr(subnet.find(delimiter) + 1);
-        std::string first_ip = subnet.substr(0, subnet.find(delimiter));//
+        std::string first_ip = subnet.substr(0, subnet.find(delimiter));////
+
+        std::cout << "first ip" << first_ip << std::endl;
+
+        this->current_ip = (unsigned char*)malloc(sizeof(unsigned char) * 4);
+        memset(this->current_ip, 0, 4);
+
 
         unsigned int ip_int_tmp = ipToInt(first_ip);
 
         this->current_mask = (0xFFFFFFFF << (32 - std::stoi(network_bits))) & 0xFFFFFFFF;
+
+        if(this->current_mask == 0x00000000) {
+            
+            this->current_ip_int = ip_int_tmp;
+            
+        } else {
+            ip_int_tmp &= this->current_mask;
+            this->network_ip = ip_int_tmp;
+    
+            std::bitset<32> binary(this->current_mask);
+            std::cout << "mask " << binary << std::endl;
+    
+            std::bitset<32> binary2(ip_int_tmp);
+            std::cout << "ip " << binary2 << std::endl;
+    
+            this->current_ip_int = ip_int_tmp + 1;
+
+        }
         
-        ip_int_tmp &= this->current_mask;
-        this->network_ip = ip_int_tmp;
-
-        std::bitset<32> binary(this->current_mask);
-        std::cout << "mask " << binary << std::endl;
-
-        std::bitset<32> binary2(ip_int_tmp);
-        std::cout << "ip " << binary2 << std::endl;
-
-        this->current_ip_int = ip_int_tmp + 1;
+       
     } else {
 
         this->current_ip_int += 1;
@@ -50,9 +66,11 @@ unsigned char* IpManager::getNextIp() {
 
     }
 
-    intToCurrentIp(this->current_ip_int);
+    unsigned char* tmp = intToIp(this->current_ip_int);
 
-    printf("result_ip: %s\n", this->current_ip);
+    memcpy(this->current_ip, tmp, 4);
+
+    free(tmp);
 
     return this->current_ip;
 }
@@ -64,7 +82,7 @@ unsigned int IpManager::ipToInt(std::string ip) {
     return (a << 24) + (b << 16) + (c << 8) + d;
 }
 
-unsigned char* IpManager::intToCurrentIp(unsigned int ip_int) {
+unsigned char* IpManager::intToIp(unsigned int ip_int) {
 
     unsigned char* result = (unsigned char*)malloc(sizeof(unsigned char) * 4);
 
@@ -75,7 +93,10 @@ unsigned char* IpManager::intToCurrentIp(unsigned int ip_int) {
 
     printf("result: %d.%d.%d.%d\n", result[0], result[1], result[2], result[3]);
 
-    this->current_ip = result;
+    return result; // seg fault here
 
-    free(result);
+}
+
+unsigned char* IpManager::getCurrentIp() {
+    return this->current_ip;
 }
