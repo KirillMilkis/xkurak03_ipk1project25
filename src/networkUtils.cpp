@@ -37,3 +37,17 @@ unsigned char* NetworkUtils::getIP(struct ifreq* ifr, int sock, unsigned char* i
     return ipv4;
 
 }
+
+std::string NetworkUtils::macToString(unsigned char* mac){
+    char mac_c[18];
+    sprintf(mac_c, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+    return std::string(mac_c);
+}
+
+std::string NetworkUtils::ipToString(unsigned char* ip){
+    char ip_c[16];
+    sprintf(ip_c, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+
+    return std::string(ip_c);
+}

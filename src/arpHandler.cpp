@@ -17,6 +17,8 @@
 #include "arpHandler.h"
 
 #define SUCCESS_SENDED 0
+#define ARP_REPLY 2
+
 
 int ARPHandler::SendARP(unsigned char* dst_ip) {
 
@@ -25,9 +27,7 @@ int ARPHandler::SendARP(unsigned char* dst_ip) {
 
     ETH_HDR eth_hdr;
     ARP_HDR arp_hdr;
-    unsigned char broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // Broadcast MAC
-    unsigned char src_mac[6];  // Source MAC
-    unsigned char src_ip[4];  // Source IP
+    const unsigned char broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // Broadcast MAC
     struct sockaddr_ll sa;
 
     // Get the index of the network device
@@ -52,10 +52,10 @@ int ARPHandler::SendARP(unsigned char* dst_ip) {
     arp_hdr.opcode = htons(1);
     
 
-    NetworkUtils::getMAC(&ifr, sock, src_mac);
-    memcpy(arp_hdr.sender_mac, src_mac, 6);
-    NetworkUtils::getIP(&ifr, sock, src_ip);
-    memcpy(arp_hdr.sender_ip, src_ip, 4);
+    NetworkUtils::getMAC(&ifr, sock, this->src_mac);
+    memcpy(arp_hdr.sender_mac, this->src_mac, 6);
+    NetworkUtils::getIP(&ifr, sock, this->src_ip);
+    memcpy(arp_hdr.sender_ip, this->src_ip, 4);
 
     
     memcpy(arp_hdr.target_mac, broadcast_mac, 6);
@@ -83,17 +83,43 @@ int ARPHandler::SendARP(unsigned char* dst_ip) {
 
 }
 
-void ARPHandler::ListenToResponce() {
+std::string ARPHandler::ListenToResponce(unsigned char* target_ip) {
     while(1){
+        memset(buffer, 0, BUFSIZE);
+        std::cout << "Listening for ARP reply" << std::endl;
         int length = recvfrom(this->socket, this->buffer, BUFSIZE, 0, NULL, NULL);
         if (length < 0) {
             perror("recvfrom() failed");
-            exit(EXIT_FAILURE);
+            continue;
         } else{
 
             std::cout << "Received packet" << std::endl;
+            
+            ETH_HDR* eth_hdr = (ETH_HDR*)buffer;
+            ARP_HDR* arp_hdr = (ARP_HDR*)(buffer + ETHER_HDR_LEN);
 
-            // Parse the received packet
+            if(ntohs(eth_hdr->type) != ETH_P_ARP) {
+                std::cout << "Not an ARP packet" << std::endl;
+                continue;
+            }
+
+            if(ntohs(arp_hdr->opcode) != 2){
+                std::cout << "Not an ARP reply" << std::endl;
+                continue;
+            }
+
+            if(memcmp(arp_hdr->target_ip, this->src_ip, 4) != 0 || memcmp(arp_hdr->target_mac, this->src_mac, 6) != 0){
+                std::cout << "Not a response to our request" << std::endl;
+                continue;
+            }
+
+            if (memcmp(arp_hdr->sender_ip, target_ip, 4) != 0) {
+                std::cout << "Not a response to our request" << std::endl;
+                continue;
+            }
+
+            std::cout << "-------------ARP reply received-------------" << std::endl;
+            return NetworkUtils::macToString(arp_hdr->sender_mac);
 
         }
     }

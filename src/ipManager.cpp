@@ -111,3 +111,8 @@ unsigned char* IpManager::intToIp(unsigned int ip_int) {
 unsigned char* IpManager::getCurrentIp() {
     return this->current_ip;
 }
+
+std::string IpManager::getCurrentIpString() {
+    std::string result = std::to_string(this->current_ip[0]) + "." + std::to_string(this->current_ip[1]) + "." + std::to_string(this->current_ip[2]) + "." + std::to_string(this->current_ip[3]);
+    return result;
+}

@@ -11,6 +11,9 @@ class NetworkUtils {
     public:
     static unsigned char* getIP(struct ifreq* ifr, int sock, unsigned char* ipv4);
     static unsigned char* getMAC(struct ifreq* ifr, int sock, unsigned char* mac);
+
+    static std::string macToString(unsigned char* mac);
+    static std::string ipToString(unsigned char* ip);
 };
 
 

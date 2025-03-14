@@ -14,6 +14,8 @@ class IpManager {
         int setSubnet(std::string subnet);
         unsigned char* getCurrentIp();
 
+        std::string getCurrentIpString();
+
 
     private:
         // std::vector<std::string> subnet;
@@ -26,6 +28,7 @@ class IpManager {
 
         unsigned int ipToInt(std::string ip);
         unsigned char* intToIp(unsigned int ip_int);
+
 
 };
 

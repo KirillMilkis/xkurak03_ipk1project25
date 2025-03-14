@@ -37,6 +37,9 @@ class ARPHandler {
         NetworkUtils networkUtils;
         SocketController socketController;
 
+        unsigned char src_mac[6];  // Source MAC
+        unsigned char src_ip[4];  // Source IP
+
 
     public:
 
@@ -54,7 +57,7 @@ class ARPHandler {
         void SendICMP();
         void GetINF();
 
-        void ListenToResponce();
+        std::string ListenToResponce(unsigned char* target_ip);
 
         ~ARPHandler() {
             close(this->socket);
