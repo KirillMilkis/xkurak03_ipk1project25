@@ -4,6 +4,8 @@
 #define ARP_HANDLER_H
 
 
+#include <atomic>
+
 #define BUFSIZE 100
 #define ETH_FRAME_LEN 1518
 #define ARP_HDR_LEN 28
@@ -57,7 +59,7 @@ class ARPHandler {
         void SendICMP();
         void GetINF();
 
-        std::string ListenToResponce(unsigned char* target_ip);
+        std::string ListenToResponce(unsigned char* target_ip, long int timeout_ms = 5000);
 
         ~ARPHandler() {
             close(this->socket);

@@ -16,6 +16,7 @@
 
 #include "arpHandler.h"
 
+
 #define SUCCESS_SENDED 0
 #define ARP_REPLY 2
 
@@ -43,7 +44,7 @@ int ARPHandler::SendARP(unsigned char* dst_ip) {
 
     // ARP HEADER
 
-    int sock = socketController.createIoctlSocket();
+    int help_sock = socketController.createIoctlSocket();
 
     arp_hdr.hardware_type = htons(1);
     arp_hdr.protocol_type = htons(0x0800);
@@ -52,9 +53,9 @@ int ARPHandler::SendARP(unsigned char* dst_ip) {
     arp_hdr.opcode = htons(1);
     
 
-    NetworkUtils::getMAC(&ifr, sock, this->src_mac);
+    NetworkUtils::getMAC(&ifr, help_sock, this->src_mac);
     memcpy(arp_hdr.sender_mac, this->src_mac, 6);
-    NetworkUtils::getIP(&ifr, sock, this->src_ip);
+    NetworkUtils::getIP(&ifr, help_sock, this->src_ip);
     memcpy(arp_hdr.sender_ip, this->src_ip, 4);
 
     
@@ -83,45 +84,56 @@ int ARPHandler::SendARP(unsigned char* dst_ip) {
 
 }
 
-std::string ARPHandler::ListenToResponce(unsigned char* target_ip) {
+std::string ARPHandler::ListenToResponce(unsigned char* target_ip, long int timeout_ms) {
     while(1){
         memset(buffer, 0, BUFSIZE);
         std::cout << "Listening for ARP reply" << std::endl;
+
+        struct timeval timeout;
+        timeout.tv_sec = timeout_ms / 1000;  // Таймаут 1 секунда
+        timeout.tv_usec = (timeout_ms % 1000) * 1000;
+        setsockopt(this->socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+
+
         int length = recvfrom(this->socket, this->buffer, BUFSIZE, 0, NULL, NULL);
+        
         if (length < 0) {
-            perror("recvfrom() failed");
-            continue;
-        } else{
-
-            std::cout << "Received packet" << std::endl;
-            
-            ETH_HDR* eth_hdr = (ETH_HDR*)buffer;
-            ARP_HDR* arp_hdr = (ARP_HDR*)(buffer + ETHER_HDR_LEN);
-
-            if(ntohs(eth_hdr->type) != ETH_P_ARP) {
-                std::cout << "Not an ARP packet" << std::endl;
-                continue;
+            if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                std::cout << "Timeout waiting for ARP reply..." << std::endl;
+                return "";
+            } else {
+                perror("recvfrom() failed");
+                break;
             }
-
-            if(ntohs(arp_hdr->opcode) != 2){
-                std::cout << "Not an ARP reply" << std::endl;
-                continue;
-            }
-
-            if(memcmp(arp_hdr->target_ip, this->src_ip, 4) != 0 || memcmp(arp_hdr->target_mac, this->src_mac, 6) != 0){
-                std::cout << "Not a response to our request" << std::endl;
-                continue;
-            }
-
-            if (memcmp(arp_hdr->sender_ip, target_ip, 4) != 0) {
-                std::cout << "Not a response to our request" << std::endl;
-                continue;
-            }
-
-            std::cout << "-------------ARP reply received-------------" << std::endl;
-            return NetworkUtils::macToString(arp_hdr->sender_mac);
-
         }
+
+        std::cout << "Received packet" << std::endl;
+        
+        ETH_HDR* eth_hdr = (ETH_HDR*)buffer;
+        ARP_HDR* arp_hdr = (ARP_HDR*)(buffer + ETHER_HDR_LEN);
+
+        if(ntohs(eth_hdr->type) != ETH_P_ARP) {
+            std::cout << "Not an ARP packet" << std::endl;
+            continue;
+        }
+
+        if(ntohs(arp_hdr->opcode) != 2){
+            std::cout << "Not an ARP reply" << std::endl;
+            continue;
+        }
+
+        if(memcmp(arp_hdr->target_ip, this->src_ip, 4) != 0 || memcmp(arp_hdr->target_mac, this->src_mac, 6) != 0){
+            std::cout << "Not a response to our request" << std::endl;
+            continue;
+        }
+
+        if (memcmp(arp_hdr->sender_ip, target_ip, 4) != 0) {
+            std::cout << "Not a response to our request" << std::endl;
+            continue;
+        }
+        std::cout << "-------------ARP reply received-------------" << std::endl;
+        return NetworkUtils::macToString(arp_hdr->sender_mac);
+
     }
 
 }

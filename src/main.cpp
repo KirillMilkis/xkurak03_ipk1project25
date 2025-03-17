@@ -130,20 +130,34 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
 
 std::map<std::string, std::string> ip_mac_map;
 
-int process_ip(unsigned char* ipaddr, ARPHandler& arpHandler) {
 
-    std::string rec_mac;
+void timer(int miliseconds){
+    std::this_thread::sleep_for(std::chrono::milliseconds(miliseconds));
+
+}
+
+#include <future>
+#include <chrono>
+#include <atomic>
+
+
+int process_ip(unsigned char* ipaddr, ARPHandler& arpHandler, long int timeout_ms) {
+
+    std::string result_mac;
+    std::atomic<bool> stop_flag = false;
 
     if(arpHandler.SendARP(ipaddr) == SUCCESS_SENDED) {
         printf("ARP packet was sent\n");
-        rec_mac = arpHandler.ListenToResponce(ipaddr);
-        if(rec_mac != ""){
-            ip_mac_map[NetworkUtils::ipToString(ipaddr)] = rec_mac;
+        
+        result_mac = arpHandler.ListenToResponce(ipaddr);
+        if(result_mac != ""){
+            ip_mac_map[NetworkUtils::ipToString(ipaddr)] = result_mac;
+        } else {
+            printf("No response\n");
         }
-    } else {
-        printf("ARP packet was not sent\n");
-    }
 
+    } 
+    std::cout << "No response2" << std::endl;
     return 0;
 
 }
@@ -181,7 +195,7 @@ int main(int argc, char *argv[]) {
 
     int subnet_num = 0;
     
-    while(!opts.subnet[subnet_num].empty()) {
+    while(subnet_num < opts.subnet.size()) {
         IpManager ipManager(opts.subnet[subnet_num]);
 
         std::vector<std::thread> threads;
@@ -192,15 +206,20 @@ int main(int argc, char *argv[]) {
 
             ip_mac_map[ipManager.getCurrentIpString()] = "not found";
 
+           
+
             threads.emplace_back([&]() {
-            process_ip(ipManager.getCurrentIp(), arpHandler);
+                process_ip(ipManager.getCurrentIp(), arpHandler, opts.timeout);
             });
+           
 
         }
+       
 
         for (auto& thread : threads) {
             thread.join();
         }
+        
 
         subnet_num++;
 
