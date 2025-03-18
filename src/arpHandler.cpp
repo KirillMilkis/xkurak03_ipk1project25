@@ -93,7 +93,7 @@ std::string ARPHandler::ListenToResponce(unsigned char* target_ip, long int time
         timeout.tv_sec = timeout_ms / 1000; 
         timeout.tv_usec = (timeout_ms % 1000) * 1000;
         setsockopt(this->socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
-
+        
         int length = recvfrom(this->socket, this->buffer, BUFSIZE, 0, NULL, NULL);
 
         std::cout << "Received packet" << std::endl;
