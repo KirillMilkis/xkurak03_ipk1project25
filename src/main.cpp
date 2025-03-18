@@ -144,12 +144,12 @@ void timer(int miliseconds){
 int process_ip(unsigned char* ipaddr, ARPHandler& arpHandler, long int timeout_ms) {
 
     std::string result_mac;
-    std::atomic<bool> stop_flag = false;
 
     if(arpHandler.SendARP(ipaddr) == SUCCESS_SENDED) {
         printf("ARP packet was sent\n");
         
         result_mac = arpHandler.ListenToResponce(ipaddr);
+
         if(result_mac != ""){
             ip_mac_map[NetworkUtils::ipToString(ipaddr)] = result_mac;
         } else {
@@ -157,7 +157,7 @@ int process_ip(unsigned char* ipaddr, ARPHandler& arpHandler, long int timeout_m
         }
 
     } 
-    std::cout << "No response2" << std::endl;
+
     return 0;
 
 }
