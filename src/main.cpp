@@ -141,25 +141,14 @@ void timer(int miliseconds){
 #include <atomic>
 
 
-int process_ip(unsigned char* ipaddr, ARPHandler& arpHandler, long int timeout_ms) {
-
-    std::string result_mac;
-
-    if(arpHandler.SendARP(ipaddr) == SUCCESS_SENDED) {
-        printf("ARP packet was sent\n");
-        
-        result_mac = arpHandler.ListenToResponce(ipaddr);
-
-        if(result_mac != ""){
-            ip_mac_map[NetworkUtils::ipToString(ipaddr)] = result_mac;
-        } else {
-            printf("No response\n");
+std::string process_ip(const unsigned char* ipaddr, ARPHandler& arpHandler, long timeout_ms) {
+    if (arpHandler.SendARP(ipaddr) == SUCCESS_SENDED) {
+        std::string result_mac = arpHandler.ListenToResponce(ipaddr);
+        if (!result_mac.empty()) {
+            return result_mac;
         }
-
-    } 
-
-    return 0;
-
+    }
+    return "not found";
 }
 
 
@@ -200,24 +189,23 @@ int main(int argc, char *argv[]) {
 
         std::vector<std::thread> threads;
 
-        while(ipManager.getNextIp() != NULL){
+        while (ipManager.getNextIp()) {
+            std::vector<unsigned char> current_ip(ipManager.getCurrentIp(), ipManager.getCurrentIp() + 4);
 
-            ARPHandler arpHandler(opts.interface);
-
-            ip_mac_map[ipManager.getCurrentIpString()] = "not found";
-
-           
-
-            threads.emplace_back([&]() {
-                process_ip(ipManager.getCurrentIp(), arpHandler, opts.timeout);
+            threads.emplace_back([&, ip_copy = std::move(current_ip)]() {
+                ARPHandler arpHandler(opts.interface);
+                ip_mac_map[NetworkUtils::ipToString(ip_copy.data())] = process_ip(ip_copy.data(), arpHandler, opts.timeout);
             });
-           
-
         }
        
 
         for (auto& thread : threads) {
             thread.join();
+        }
+
+
+        for (auto& [ip, mac] : ip_mac_map) {
+            std::cout << ip << " -> " << mac << std::endl;
         }
         
 

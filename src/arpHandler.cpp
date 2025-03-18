@@ -21,7 +21,7 @@
 #define ARP_REPLY 2
 
 
-int ARPHandler::SendARP(unsigned char* dst_ip) {
+int ARPHandler::SendARP(const unsigned char* dst_ip) {
 
     // Function to send ARP packets
     std::cout << "Sending ARP packet" << std::endl;
@@ -73,6 +73,8 @@ int ARPHandler::SendARP(unsigned char* dst_ip) {
     memset(buffer, 0, ETH_FRAME_LEN);  // Заполняем буфер кадра
     memcpy(buffer, &eth_hdr, ETHER_HDR_LEN);
     memcpy(buffer + ETHER_HDR_LEN, &arp_hdr, ARP_HDR_LEN);
+    
+    std::cout << "socket" << this->socket << std::endl;
 
     if (sendto(this->socket, buffer, ETHER_HDR_LEN + ARP_HDR_LEN, 0, (struct sockaddr*)&sa, sizeof(struct sockaddr_ll)) < 0) {
         perror("sendto() failed");
@@ -84,7 +86,7 @@ int ARPHandler::SendARP(unsigned char* dst_ip) {
 
 }
 
-std::string ARPHandler::ListenToResponce(unsigned char* target_ip, long int timeout_ms) {
+std::string ARPHandler::ListenToResponce(const unsigned char* target_ip, long int timeout_ms) {
     while(1){
         memset(buffer, 0, BUFSIZE);
         std::cout << "Listening for ARP reply" << std::endl;
@@ -92,11 +94,13 @@ std::string ARPHandler::ListenToResponce(unsigned char* target_ip, long int time
         struct timeval timeout;
         timeout.tv_sec = timeout_ms / 1000; 
         timeout.tv_usec = (timeout_ms % 1000) * 1000;
+
+        std::cout << "socket" << this->socket << std::endl;
+
         setsockopt(this->socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
         
         int length = recvfrom(this->socket, this->buffer, BUFSIZE, 0, NULL, NULL);
 
-        std::cout << "Received packet" << std::endl;
         
         if (length < 0) {
             if (errno == EWOULDBLOCK || errno == EAGAIN) {
@@ -130,7 +134,7 @@ std::string ARPHandler::ListenToResponce(unsigned char* target_ip, long int time
             std::cout << "Not a response to our request" << std::endl;
             continue;
         }
-        std::cout << "-------------ARP reply received-------------" << std::endl;
+        std::cout << "-------------ARP reply received------------- Sokcet num" << this->socket << std::endl;
         return NetworkUtils::macToString(arp_hdr->sender_mac);
 
     }

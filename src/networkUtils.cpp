@@ -45,7 +45,7 @@ std::string NetworkUtils::macToString(unsigned char* mac){
     return std::string(mac_c);
 }
 
-std::string NetworkUtils::ipToString(unsigned char* ip){
+std::string NetworkUtils::ipToString(const unsigned char* ip){
     char ip_c[16];
     sprintf(ip_c, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
 

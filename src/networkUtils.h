@@ -13,7 +13,7 @@ class NetworkUtils {
     static unsigned char* getMAC(struct ifreq* ifr, int sock, unsigned char* mac);
 
     static std::string macToString(unsigned char* mac);
-    static std::string ipToString(unsigned char* ip);
+    static std::string ipToString(const unsigned char* ip);
 };
 
 

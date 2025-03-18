@@ -55,11 +55,11 @@ class ARPHandler {
             buffer = (unsigned char*)malloc(sizeof(unsigned char) * ETH_FRAME_LEN);
         }
 
-        int SendARP(unsigned char* ipaddr);
+        int SendARP(const unsigned char* ipaddr);
         void SendICMP();
         void GetINF();
 
-        std::string ListenToResponce(unsigned char* target_ip, long int timeout_ms = 5000);
+        std::string ListenToResponce(const unsigned char* target_ip, long int timeout_ms = 5000);
 
         ~ARPHandler() {
             close(this->socket);
