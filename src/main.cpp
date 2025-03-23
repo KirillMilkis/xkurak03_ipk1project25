@@ -14,6 +14,7 @@
 #include <thread>
 
 #include "main.h"
+#include "transportHandler.h"
 
 
 void interrupt_sniffer(int signum){
@@ -126,7 +127,7 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
 
 }
 
-#define SUCCESS_SENDED 0
+#define SUCCESS_SENDED 3
 
 std::map<std::string, std::string> ip_mac_map;
 std::map<std::string, bool> ip_icmp_reply_map;
@@ -142,26 +143,33 @@ void timer(int miliseconds){
 #include <atomic>
 #include  "icmpHandler.h"
 
+std::string process_arp(const unsigned char* target_ip_char, TransportHandler& arpHandler, long timeout_ms) {
 
-std::string process_arp(const unsigned char* target_ip_char, ARPHandler& arpHandler, long timeout_ms) {
-    
-    if (arpHandler.SendARP(target_ip_char) == SUCCESS_SENDED) {
-        std::string result_mac = arpHandler.ListenToResponce(target_ip_char);
-        if (!result_mac.empty()) {
-            return result_mac;
+    if (arpHandler.SendRequest(target_ip_char, nullptr) == SUCCESS_SENDED) {
+        if(arpHandler.ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
+            std::string result_mac = arpHandler.GetDestMAC();
+
+
+            if (!result_mac.empty()) {
+                return result_mac;
+            }
         }
     }
+
+    
     return "not found";
 }
 
-bool process_icmp(const unsigned char* target_ip_char, std::string target_ip_string, ICMPHandler& icmpHandler, long timeout_ms) {
+bool process_icmp(const unsigned char* target_ip_char, std::string target_ip_string, TransportHandler& icmpHandler, long timeout_ms) {
     const unsigned char* target_mac_char = (const unsigned char*)ip_mac_map[target_ip_string].c_str();
 
-    if (icmpHandler.SendICMP(target_ip_char, target_mac_char) == SUCCESS_SENDED){
-        return icmpHandler.ListenToResponce(target_ip_char, timeout_ms);
-    }   else {
-        return false;
-    }
+    if (icmpHandler.SendRequest(target_ip_char, target_mac_char) == SUCCESS_SENDED){
+        if (icmpHandler.ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
+            return true;
+        } 
+    }   
+
+    return false;
 
 }
 
@@ -201,18 +209,24 @@ int main(int argc, char *argv[]) {
             
             threads.emplace_back([&, ip_copy = std::move(current_ip)]() {
 
-                ARPHandler arpHandler(opts.interface);
-                ICMPHandler icmpHandler(opts.interface);
+                // ARPHandler arpHandler(opts.interface);
+
+                TransportHandler transportHandlerArp(opts.interface, 1);
 
                 const unsigned char* target_ip_char = ip_copy.data();
                 
                 std::string target_ip_string = NetworkUtils::ipToString(target_ip_char);
 
-                ip_mac_map[target_ip_string] = process_arp(target_ip_char, arpHandler, opts.timeout);
-   
+                ip_mac_map[target_ip_string] = process_arp(target_ip_char, transportHandlerArp, opts.timeout);
+
+                TransportHandler transportHandlerIcmp(opts.interface, 2);
+                
                 if (ip_mac_map[target_ip_string] != "not found"){
-                    ip_icmp_reply_map[target_ip_string] = process_icmp(target_ip_char, target_ip_string, icmpHandler, opts.timeout);
+   
+                    ip_icmp_reply_map[target_ip_string] = process_icmp(target_ip_char, target_ip_string, transportHandlerIcmp, opts.timeout);
+                
                 } else {
+
                     ip_icmp_reply_map[target_ip_string] = false;
                 }
 
