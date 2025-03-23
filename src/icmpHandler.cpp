@@ -88,7 +88,6 @@ int ICMPHandler::SendICMP(const unsigned char* target_ip, const unsigned char* t
     memcpy(this->buffer + sizeof(eth_hdr), &ip_hdr, sizeof(ip_hdr));
     memcpy(this->buffer + sizeof(eth_hdr) + sizeof(ip_hdr), &icmp_hdr, sizeof(icmp_hdr));
 
-
     if(sendto(this->sock, buffer, ETHER_HDR_LEN + IP4_HDR_LEN + ICMP_HDR_LEN, 0, (struct sockaddr*)&sa, sizeof(struct sockaddr_ll)) < 0){
         perror("sendto() failed");
         exit(EXIT_FAILURE);

@@ -29,8 +29,7 @@
 int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned char* dst_mac) {
     // Function to send     ARP packets
 
-    memcmp(this->dst_ip, ipaddr, 4);
-   
+    memcpy(this->dst_ip, ipaddr, 4);
 
     // Broadcast MAC
     struct sockaddr_ll sa;
@@ -190,22 +189,29 @@ bool TransportHandler::testICMPResponse(const unsigned char* buffer){
     ICMP_HDR* icmp_hdr = (ICMP_HDR*)(buffer + ETHER_HDR_LEN + IP4_HDR_LEN);
 
     if(ntohs(eth_hdr->h_proto) != ETH_P_IP) {
-        // std::cout << "Not an IP packet" << std::endl;
+        std::cout << "Not an IP packet1" << std::endl;
         return false;
     }
 
     if(ip_hdr->protocol != IPPROTO_ICMP) {
-        // std::cout << "Not an ICMP packet" << std::endl;
+        std::cout << "Not an ICMP packet2" << std::endl;
         return false;
     }
 
     if(ip_hdr->daddr != *(uint32_t*)NetworkUtils::getIP(this->ifr.ifr_name, AF_INET) || ip_hdr->saddr != *(uint32_t*)this->dst_ip){
-        // std::cout << "Not a response to our request" << std::endl;
+        std::cout << ip_hdr->daddr << " " << *(uint32_t*)NetworkUtils::getIP(this->ifr.ifr_name, AF_INET) << std::endl;
+        std::cout << ip_hdr->saddr << " " << *(uint32_t*)this->dst_ip << std::endl;
+        std::cout << "Not a response to our request3" << std::endl;
         return false;
     }
 
+    // if(memcmp(ip_hdr->daddr, NetworkUtils::getIP(this->ifr.ifr_name, AF_INET), 4) != 0 || memcmp(ip_hdr->saddr, this->dst_ip, 4) != 0) {
+    //     std::cout << "Not a response to our request6" << std::endl;
+    //     return false;
+    // }
+
     if(memcmp(eth_hdr->h_dest, NetworkUtils::getMAC(&this->ifr), 6) != 0) {
-        // std::cout << "Not a response to our request" << std::endl;
+        std::cout << "Not a response to our request4" << std::endl;
         return false;
     }
 
@@ -215,7 +221,7 @@ bool TransportHandler::testICMPResponse(const unsigned char* buffer){
     // }
 
     if(icmp_hdr->type != 0){
-        // std::cout << "Not an icmp ehco reply" << std::endl;
+        std::cout << "Not an icmp ehco reply5" << std::endl;
         return false;
     }
 

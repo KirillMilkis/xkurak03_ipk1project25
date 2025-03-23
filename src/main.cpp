@@ -149,7 +149,6 @@ std::string process_arp(const unsigned char* target_ip_char, TransportHandler& a
         if(arpHandler.ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
             std::string result_mac = arpHandler.GetDestMAC();
 
-
             if (!result_mac.empty()) {
                 return result_mac;
             }

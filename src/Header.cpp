@@ -196,6 +196,7 @@ class Header {
         void build(int protocol, const unsigned char* dst_ip,const  unsigned char* dst_mac, struct ifreq ifr) override {
             std::cout << "Building ICMP Header" << std::endl;
 
+            memset(&icmp_hdr, 0, sizeof(icmp_hdr));
             icmp_hdr.type = 8;
             icmp_hdr.code = 0;
             this->icmp_hdr_id = getpid();
