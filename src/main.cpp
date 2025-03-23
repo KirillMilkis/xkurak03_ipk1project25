@@ -144,6 +144,7 @@ void timer(int miliseconds){
 
 
 std::string process_arp(const unsigned char* target_ip_char, ARPHandler& arpHandler, long timeout_ms) {
+    
     if (arpHandler.SendARP(target_ip_char) == SUCCESS_SENDED) {
         std::string result_mac = arpHandler.ListenToResponce(target_ip_char);
         if (!result_mac.empty()) {
@@ -155,6 +156,7 @@ std::string process_arp(const unsigned char* target_ip_char, ARPHandler& arpHand
 
 bool process_icmp(const unsigned char* target_ip_char, std::string target_ip_string, ICMPHandler& icmpHandler, long timeout_ms) {
     const unsigned char* target_mac_char = (const unsigned char*)ip_mac_map[target_ip_string].c_str();
+
     if (icmpHandler.SendICMP(target_ip_char, target_mac_char) == SUCCESS_SENDED){
         return icmpHandler.ListenToResponce(target_ip_char, timeout_ms);
     }   else {
