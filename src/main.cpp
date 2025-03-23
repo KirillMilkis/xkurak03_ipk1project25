@@ -129,6 +129,7 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
 #define SUCCESS_SENDED 0
 
 std::map<std::string, std::string> ip_mac_map;
+std::map<std::string, bool> ip_icmp_reply_map;
 
 
 void timer(int miliseconds){
@@ -139,16 +140,27 @@ void timer(int miliseconds){
 #include <future>
 #include <chrono>
 #include <atomic>
+#include  "icmpHandler.h"
 
 
-std::string process_ip(const unsigned char* ipaddr, ARPHandler& arpHandler, long timeout_ms) {
-    if (arpHandler.SendARP(ipaddr) == SUCCESS_SENDED) {
-        std::string result_mac = arpHandler.ListenToResponce(ipaddr);
+std::string process_arp(const unsigned char* target_ip_char, ARPHandler& arpHandler, long timeout_ms) {
+    if (arpHandler.SendARP(target_ip_char) == SUCCESS_SENDED) {
+        std::string result_mac = arpHandler.ListenToResponce(target_ip_char);
         if (!result_mac.empty()) {
             return result_mac;
         }
     }
     return "not found";
+}
+
+bool process_icmp(const unsigned char* target_ip_char, std::string target_ip_string, ICMPHandler& icmpHandler, long timeout_ms) {
+    const unsigned char* target_mac_char = (const unsigned char*)ip_mac_map[target_ip_string].c_str();
+    if (icmpHandler.SendICMP(target_ip_char, target_mac_char) == SUCCESS_SENDED){
+        return icmpHandler.ListenToResponce(target_ip_char, timeout_ms);
+    }   else {
+        return false;
+    }
+
 }
 
 
@@ -169,33 +181,42 @@ int main(int argc, char *argv[]) {
         print_active_interfaces();
     }
 
-    u_int16_t src_port, dst_port;
-    u_int32_t src_addr, dst_addr;
     printf("Interface: %s\n", opts.interface.c_str());  
 
 
-	int raw_sc = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
-	if (raw_sc < 0)
-	{
-        perror("socket() failed");
-		exit(EXIT_FAILURE);
-	}
-    printf("Interface1:21 %s\n", opts.interface.c_str());  
+    IpManager ipManager(opts.subnet);
+    ipManager.printAllSubnets();
 
-    int subnet_num = 0;
+ 
     
-    while(subnet_num < opts.subnet.size()) {
-        IpManager ipManager(opts.subnet[subnet_num]);
+    do {
 
         std::vector<std::thread> threads;
 
-        while (ipManager.getNextIp()) {
+        while (ipManager.getNextIp() !=  nullptr) {
+            
             std::vector<unsigned char> current_ip(ipManager.getCurrentIp(), ipManager.getCurrentIp() + 4);
-
+            
             threads.emplace_back([&, ip_copy = std::move(current_ip)]() {
+
                 ARPHandler arpHandler(opts.interface);
-                ip_mac_map[NetworkUtils::ipToString(ip_copy.data())] = process_ip(ip_copy.data(), arpHandler, opts.timeout);
+                ICMPHandler icmpHandler(opts.interface);
+
+                const unsigned char* target_ip_char = ip_copy.data();
+                
+                std::string target_ip_string = NetworkUtils::ipToString(target_ip_char);
+
+                ip_mac_map[target_ip_string] = process_arp(target_ip_char, arpHandler, opts.timeout);
+   
+                if (ip_mac_map[target_ip_string] != "not found"){
+                    ip_icmp_reply_map[target_ip_string] = process_icmp(target_ip_char, target_ip_string, icmpHandler, opts.timeout);
+                } else {
+                    ip_icmp_reply_map[target_ip_string] = false;
+                }
+
             });
+
+            
         }
        
 
@@ -204,12 +225,31 @@ int main(int argc, char *argv[]) {
         }
 
 
-        for (auto& [ip, mac] : ip_mac_map) {
-            std::cout << ip << " -> " << mac << std::endl;
-        }
+       
         
 
-        subnet_num++;
+    } while(ipManager.useNextSubnet());
+
+
+    for (auto& [ip, mac] : ip_mac_map) {
+        unsigned char mac_c[6];
+        
+        printf("%s arp ", ip.c_str());
+        
+        if(mac != "not found"){
+            sscanf(mac.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &mac_c[0], &mac_c[1], &mac_c[2], &mac_c[3], &mac_c[4], &mac_c[5]);
+            printf("(%02x-%02x-%02x-%02x-%02x-%02x)", mac_c[0], mac_c[1], mac_c[2], mac_c[3], mac_c[4], mac_c[5]);
+        } else {
+            printf("FAIL");
+        }
+        
+        printf(", ");
+
+        if(ip_icmp_reply_map[ip]){
+            printf("icmp OK\n");
+        } else {
+            printf("icmp FAIL\n");
+        }
 
     }
 

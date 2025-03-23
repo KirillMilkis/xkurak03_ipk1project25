@@ -2,41 +2,94 @@
 #include "networkUtils.h"
 #include <cstring>
 
+#include <ifaddrs.h>
+
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <netinet/in.h>
 
-unsigned char* NetworkUtils::getMAC(struct ifreq* ifr, int sock, unsigned char* mac) {
-
-    if (ioctl(sock, SIOCGIFHWADDR, ifr) < 0) {
-        perror ("ioctl() failed to get source MAC address");
-        
-      }
-
-    memcpy(mac, ifr->ifr_hwaddr.sa_data, 6);
-    printf("MAC Address: %02X:%02X:%02X:%02X:%02X:%02X\n",
-           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-
-    return mac;
-}
 
 
-unsigned char* NetworkUtils::getIP(struct ifreq* ifr, int sock, unsigned char* ipv4) {
+unsigned char* NetworkUtils::mac_addr = NULL;
+unsigned char* NetworkUtils::ip_addrv4 = NULL;
+unsigned char* NetworkUtils::ip_addrv6 = NULL;
 
-    if (ioctl(sock, SIOCGIFADDR, ifr) < 0) {
-        perror("IP error");
-        return NULL;
+unsigned char* NetworkUtils::getMAC(struct ifreq* ifr) {
+
+    if(NetworkUtils::mac_addr == NULL) {
+
+        NetworkUtils::mac_addr = (unsigned char*)malloc(sizeof(unsigned char) * 6);
+        if(NetworkUtils::mac_addr == NULL) {
+            perror("malloc() failed");
+            return NULL;
+        }
+
+        int sock = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW);
+        if(sock < 0){
+            perror("Socket error");
+            exit(1);
+        }
+
+        if(ioctl(sock, SIOCGIFHWADDR, ifr) < 0) {
+            perror ("ioctl() failed to get source MAC address");
+            
+          }
+    
+        memcpy(NetworkUtils::mac_addr, ifr->ifr_hwaddr.sa_data, 6);
+
+        close(sock);
+   
     }
 
-    struct sockaddr_in* ipaddr = (struct sockaddr_in*)&ifr->ifr_addr;
-    memcpy (ipv4, &ipaddr->sin_addr, 4);
+    return NetworkUtils::mac_addr;
+}
 
-    printf("IP Address: %d.%d.%d.%d\n",
-           ipv4[0], ipv4[1], ipv4[2], ipv4[3]);
 
-    return ipv4;
+unsigned char* NetworkUtils::getIP(const char* iface, int family) {
+
+    if (family == AF_INET && NetworkUtils::ip_addrv4) return ip_addrv4;
+    if (family == AF_INET6 && NetworkUtils::ip_addrv6) return ip_addrv6;
+
+
+    struct ifaddrs* ifaddr;
+    if (getifaddrs(&ifaddr) == -1) {
+        perror("getifaddrs() failed");
+        return nullptr;
+    }
+
+    for (struct ifaddrs* ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (!ifa->ifa_addr || strcmp(ifa->ifa_name, iface) != 0) continue;
+
+        if (ifa->ifa_addr->sa_family == family) {
+            if (family == AF_INET) {  // IPv4
+                struct sockaddr_in* ip4 = (struct sockaddr_in*)ifa->ifa_addr;
+                if (!NetworkUtils::ip_addrv4) NetworkUtils::ip_addrv4 = (unsigned char*)malloc(4);
+                memcpy(ip_addrv4, &ip4->sin_addr, 4);
+
+                freeifaddrs(ifaddr);
+                return NetworkUtils::ip_addrv4;
+            } 
+            else if (family == AF_INET6) {  // IPv6
+                struct sockaddr_in6* ip6 = (struct sockaddr_in6*)ifa->ifa_addr;
+                if (!NetworkUtils::ip_addrv6) NetworkUtils::ip_addrv6 = (unsigned char*)malloc(16);
+                memcpy(NetworkUtils::ip_addrv6, &ip6->sin6_addr, 16);
+
+                freeifaddrs(ifaddr);
+                return NetworkUtils::ip_addrv4;
+            }
+          
+            
+        }
+    }
+
+    freeifaddrs(ifaddr);
+    
+    return nullptr;
 
 }
+
+
+
 
 std::string NetworkUtils::macToString(unsigned char* mac){
     char mac_c[18];

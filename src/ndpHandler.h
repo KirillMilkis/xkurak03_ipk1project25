@@ -1,13 +1,16 @@
 #include "networkUtils.h"
 #include "socketController.h"
 
-#ifndef ARP_HANDLER_H
-#define ARP_HANDLER_H
+#ifndef NDP_HANDLER_H
+#define NDP_HANDLER_H
 
 #include "main.h"
 
-
-#include <atomic>
+#include <sys/socket.h>  // For socket(), bind(), etc.
+#include <netinet/in.h>   // For sockaddr_in and related structures.
+#include <net/if.h>       // For struct ifreq.
+#include <arpa/inet.h>    // For IP address manipulation.
+#include <linux/if_packet.h>  // For raw socket and ETH_P_ALL.
 
 #define BUFSIZE 100
 #define ETH_FRAME_LEN 1518
@@ -15,21 +18,10 @@
 #define IP4_HDR_LEN 20
 #define ETHER_HDR_LEN 14
 
-typedef struct arp_hdr {
-    unsigned short hardware_type;
-    unsigned short protocol_type;
-    unsigned char hardware_len;
-    unsigned char protocol_len;
-    unsigned short opcode;
-    unsigned char sender_mac[6];
-    unsigned char sender_ip[4];
-    unsigned char target_mac[6];
-    unsigned char target_ip[4];
-} ARP_HDR;
 
-class ARPHandler {
+class NDPHandler {
     private:
-        int socket;
+        int sock;
         unsigned char* buffer;
         const std::string iface;
         struct ifreq ifr;
@@ -42,27 +34,27 @@ class ARPHandler {
 
     public:
 
-        ARPHandler(const std::string& iface) : iface(iface) {
+        NDPHandler(const std::string& iface) : iface(iface) {
             socketController = SocketController();
             networkUtils = NetworkUtils();
 
             iface.copy(ifr.ifr_name, IFNAMSIZ);
 
-            this->socket = socketController.createRawSocket();
+            // this->socket = socketController.createRawSocket();
             buffer = (unsigned char*)malloc(sizeof(unsigned char) * ETH_FRAME_LEN);
         }
 
-        int SendARP(const unsigned char* ipaddr);
-        void SendICMP();
-        void GetINF();
+        int sendNDP(unsigned char* dst_ip6);
+        int receiveNDP(const unsigned char* target_ip);
+        
 
         std::string ListenToResponce(const unsigned char* target_ip, long int timeout_ms = 5000);
 
-        ~ARPHandler() {
-            close(this->socket);
+        ~NDPHandler() {
+            close(this->sock);
             free(buffer);
         }
 
 };
 
-#endif // ARP_HANDLER_H
+#endif // NDP_HANDLER_H
