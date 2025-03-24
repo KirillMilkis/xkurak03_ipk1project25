@@ -56,10 +56,13 @@ unsigned char* NetworkUtils::getIP(const char* iface, int family) {
         perror("getifaddrs() failed");
         return nullptr;
     }
-
+   
     for (struct ifaddrs* ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+        std::cout << ifa->ifa_name << "ifr name" << std::endl;
+        std::cout << iface << "iface" << std::endl;
+        std::cout << ifa->ifa_addr->sa_family << "family" << std::endl;
         if (!ifa->ifa_addr || strcmp(ifa->ifa_name, iface) != 0) continue;
-
+      
         if (ifa->ifa_addr->sa_family == family) {
             if (family == AF_INET) {  // IPv4
                 struct sockaddr_in* ip4 = (struct sockaddr_in*)ifa->ifa_addr;
@@ -70,6 +73,7 @@ unsigned char* NetworkUtils::getIP(const char* iface, int family) {
                 return NetworkUtils::ip_addrv4;
             } 
             else if (family == AF_INET6) {  // IPv6
+                
                 struct sockaddr_in6* ip6 = (struct sockaddr_in6*)ifa->ifa_addr;
                 if (!NetworkUtils::ip_addrv6) NetworkUtils::ip_addrv6 = (unsigned char*)malloc(16);
                 memcpy(NetworkUtils::ip_addrv6, &ip6->sin6_addr, 16);

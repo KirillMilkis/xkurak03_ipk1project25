@@ -35,7 +35,6 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
         memcpy(this->dst_ip6, ipaddr, 16);
     }
    
-
     // Broadcast MAC
     struct sockaddr_ll sa;
 
@@ -44,11 +43,13 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
     // Get the index of the network device
 
     memset(&sa, 0, sizeof(struct sockaddr_ll));
-    sa.sll_protocol = htons(ETH_P_ALL);  
-    if ((sa.sll_ifindex = if_nametoindex (this->ifr.ifr_name)) == 0) {
+    sa.sll_protocol = htons(ETH_P_ALL);
+
+    if ((sa.sll_ifindex = if_nametoindex(this->ifr.ifr_name)) == 0) {
         perror ("if_nametoindex() failed to obtain interface index");
         exit(EXIT_FAILURE);
-      }
+    }
+
     sa.sll_halen = ETH_ALEN;
 
     memset(buffer, 0, ETH_FRAME_LEN);
@@ -112,7 +113,8 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
             IP6Header ip6_hdr;
             ip6_hdr.build(3, ipaddr, NULL, this->ifr);
             memcpy(buffer + ETHER_HDR_LEN, ip6_hdr.getHeader(), IP6_HDR_LEN);
-            
+            std::cout << "Building IP6 Header22" << std::endl;
+
             ICMP6Header icmp6_hdr;
             icmp6_hdr.build(3, ipaddr, NULL, this->ifr);
             memcpy(buffer + ETHER_HDR_LEN + IP6_HDR_LEN, icmp6_hdr.getHeader(), ICMP6_HDR_LEN);

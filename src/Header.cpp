@@ -226,16 +226,19 @@ class Header {
         struct ifreq ifr;
     public:
         void build(int protocol, const unsigned char* dst_ip,const  unsigned char* dst_mac, struct ifreq ifr) override {
-            // std::cout << "Building IP6 Header" << std::endl;
+           
 
             ip6_hdr.ip6_flow = htonl((6 << 28) | (0 << 20) | 0);
             ip6_hdr.ip6_plen = htons(ICMP6_HDR_LEN); 
             ip6_hdr.ip6_nxt = IPPROTO_ICMPV6; 
             ip6_hdr.ip6_hlim = 255; 
+            
+
             memcpy(&ip6_hdr.ip6_src, NetworkUtils::getIP(this->ifr.ifr_name, AF_INET6), 16);
             // inet_pton(AF_INET6, NetworkUtils::getIP(this->ifr.ifr_name, AF_INET6), &ip6_hdr.ip6_src); 
             memcpy(&ip6_hdr.ip6_dst, dst_ip, 16);
 
+           
         }
 
         const struct ip6_hdr* getHeader() {

@@ -200,8 +200,6 @@ int main(int argc, char *argv[]) {
 
     IpManager ipManager(opts.subnet);
     ipManager.printAllSubnets();
-
- 
     
     do {
 
@@ -240,7 +238,7 @@ int main(int argc, char *argv[]) {
     
                 });
 
-                continue;
+                continue; //
 
 
             } 

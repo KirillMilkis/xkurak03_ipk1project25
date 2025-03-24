@@ -63,7 +63,7 @@ class TransportHandler {
             networkUtils = NetworkUtils();
 
             iface.copy(ifr.ifr_name, IFNAMSIZ);
-            
+
             buffer = (unsigned char*)malloc(sizeof(unsigned char) * ETH_FRAME_LEN);
 
         }
