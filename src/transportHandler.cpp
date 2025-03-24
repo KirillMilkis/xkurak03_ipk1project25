@@ -105,22 +105,17 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
 
         case NDP: {
           
-            // headerBuilder.buildETH(3, ipaddr, NULL, this->ifr);
-            // memcpy(buffer, headerBuilder.getETHHeader(), ETHER_HDR_LEN);
+            headerBuilder.buildETH(3, ipaddr, NULL, this->ifr);
+            headerBuilder.buildIP6(3, ipaddr, NULL, this->ifr);
+            headerBuilder.buildICMP6(3, ipaddr, NULL, this->ifr);
+          
+            memcpy(buffer, headerBuilder.getETHHeader(), ETHER_HDR_LEN);
+            memcpy(buffer + ETHER_HDR_LEN, headerBuilder.getIP6Header(), IP6_HDR_LEN);
+            memcpy(buffer + ETHER_HDR_LEN + IP6_HDR_LEN, headerBuilder.getICMP6Header(), 24);
 
-            // headerBuilder.buildIP6(3, ipaddr, NULL, this->ifr);
-            // memcpy(buffer + ETHER_HDR_LEN, headerBuilder.getIP6Header(), IP6_HDR_LEN);
-    
-            // headerBuilder.buildICMP6(3, ipaddr, NULL, this->ifr);
-            // memcpy(buffer + ETHER_HDR_LEN + IP6_HDR_LEN, headerBuilder.getICMP6Header(), ICMP6_HDR_LEN);
+            buffer_size = ETHER_HDR_LEN + IP6_HDR_LEN + 24;
 
-            // struct nd_neighbor_solicit icmp6_ns;
-            // memcpy(&icmp6_ns.nd_ns_target, ipaddr, 16);
-            // memcpy(buffer + ETHER_HDR_LEN + IP6_HDR_LEN + ICMP6_HDR_LEN, &icmp6_ns, sizeof(icmp6_ns));
-
-            // buffer_size = ETHER_HDR_LEN + IP6_HDR_LEN + ICMP6_HDR_LEN;
-
-            headerBuilder.createNDPPacket(buffer, &buffer_size, ipaddr, this->ifr);
+            // headerBuilder.createNDPPacket(buffer, &buffer_size, ipaddr, this->ifr);
 
             break;
         }
