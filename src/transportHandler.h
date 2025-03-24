@@ -62,6 +62,8 @@ class TransportHandler {
             // socketController = SocketController();
             networkUtils = NetworkUtils();
 
+            memset(this->ifr.ifr_name, 0, IFNAMSIZ);
+
             iface.copy(ifr.ifr_name, IFNAMSIZ);
 
             buffer = (unsigned char*)malloc(sizeof(unsigned char) * ETH_FRAME_LEN);

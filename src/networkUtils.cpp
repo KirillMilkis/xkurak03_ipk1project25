@@ -58,9 +58,6 @@ unsigned char* NetworkUtils::getIP(const char* iface, int family) {
     }
    
     for (struct ifaddrs* ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
-        std::cout << ifa->ifa_name << "ifr name" << std::endl;
-        std::cout << iface << "iface" << std::endl;
-        std::cout << ifa->ifa_addr->sa_family << "family" << std::endl;
         if (!ifa->ifa_addr || strcmp(ifa->ifa_name, iface) != 0) continue;
       
         if (ifa->ifa_addr->sa_family == family) {
@@ -73,13 +70,11 @@ unsigned char* NetworkUtils::getIP(const char* iface, int family) {
                 return NetworkUtils::ip_addrv4;
             } 
             else if (family == AF_INET6) {  // IPv6
-                
                 struct sockaddr_in6* ip6 = (struct sockaddr_in6*)ifa->ifa_addr;
                 if (!NetworkUtils::ip_addrv6) NetworkUtils::ip_addrv6 = (unsigned char*)malloc(16);
                 memcpy(NetworkUtils::ip_addrv6, &ip6->sin6_addr, 16);
-
                 freeifaddrs(ifaddr);
-                return NetworkUtils::ip_addrv4;
+                return NetworkUtils::ip_addrv6;
             }
           
             
@@ -112,6 +107,29 @@ unsigned short NetworkUtils::checksum(void *b, int len) {
 
     return result;
 }
+
+
+// uint16_t NetworkUtils::checksum(uint16_t *addr, int len) {
+//     int nleft = len;
+//     uint32_t sum = 0;
+//     uint16_t *w = addr;
+//     uint16_t answer = 0;
+
+//     while (nleft > 1) {
+//         sum += *w++;
+//         nleft -= 2;
+//     }
+
+//     if (nleft == 1) {
+//         *(unsigned char *) (&answer) = *(unsigned char *) w;
+//         sum += answer;
+//     }
+
+//     sum = (sum >> 16) + (sum & 0xffff);
+//     sum += (sum >> 16);
+//     answer = ~sum;
+//     return (answer);
+// }
 
 
 

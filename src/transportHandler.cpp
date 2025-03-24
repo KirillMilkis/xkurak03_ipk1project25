@@ -1,6 +1,5 @@
 
 #include "transportHandler.h"
-#include "Header.cpp"
 #include <iostream>
 #include <string>
 #include <array>
@@ -25,6 +24,8 @@
 #define ICMPv6 4
 #define NDP 3
 
+
+#include "headerBuilder.cpp"
 
 int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned char* dst_mac) {
     // Function to send     ARP packets
@@ -53,43 +54,41 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
     sa.sll_halen = ETH_ALEN;
 
     memset(buffer, 0, ETH_FRAME_LEN);
-
+    HeaderBuilder headerBuilder;
     switch(this->protocol) {
         case ARP: {
 
-            ETHHeader eth_hdr;
-            eth_hdr.build(1, ipaddr, NULL, this->ifr);
-            memcpy(buffer, eth_hdr.getHeader(), ETHER_HDR_LEN);
+            headerBuilder.buildETH(1, ipaddr, NULL, this->ifr);
+            memcpy(buffer, headerBuilder.getETHHeader(), ETHER_HDR_LEN);
 
-            ARPHeader arp_hdr;
-            arp_hdr.build(1, ipaddr, NULL, this->ifr);
-            memcpy(buffer + ETHER_HDR_LEN, arp_hdr.getHeader(), ARP_HDR_LEN);
+            headerBuilder.buildARP(1, ipaddr, NULL, this->ifr);
+            memcpy(buffer + ETHER_HDR_LEN, headerBuilder.getARPHeader(), ARP_HDR_LEN);
 
             buffer_size = ETHER_HDR_LEN + ARP_HDR_LEN;
             break;
             
         }
         case ICMP: {
-            ETHHeader eth_hdr;
-            eth_hdr.build(2, ipaddr, dst_mac, this->ifr);
-            memcpy(buffer, eth_hdr.getHeader(), ETHER_HDR_LEN);
+         
+            // ETHHeader eth_hdr;
+            headerBuilder.buildETH(2, ipaddr, dst_mac, this->ifr);
+            memcpy(buffer, headerBuilder.getETHHeader(), ETHER_HDR_LEN);
 
-            IPHeader ip_hdr;
-            ip_hdr.build(2, ipaddr, dst_mac, this->ifr);
-            memcpy(buffer + ETHER_HDR_LEN, ip_hdr.getHeader(), IP4_HDR_LEN);
+            // IPHeader ip_hdr;
+            headerBuilder.buildIP(2, ipaddr, dst_mac, this->ifr);
+            memcpy(buffer + ETHER_HDR_LEN, headerBuilder.getIPHeader(), IP4_HDR_LEN);
             
-            ICMPHeader icmp_hdr;
-            icmp_hdr.build(2, ipaddr, dst_mac, this->ifr);
-            memcpy(buffer + ETHER_HDR_LEN + IP4_HDR_LEN, icmp_hdr.getHeader(), ICMP_HDR_LEN);
+            headerBuilder.buildICMP(2, ipaddr, dst_mac, this->ifr);
+            memcpy(buffer + ETHER_HDR_LEN + IP4_HDR_LEN, headerBuilder.getICMPHeader(), ICMP_HDR_LEN);
 
             buffer_size = ETHER_HDR_LEN + IP4_HDR_LEN + ICMP_HDR_LEN;
             break;
 
         }
         case ICMPv6: {
-            ETHHeader eth_hdr;
-            eth_hdr.build(3, ipaddr, dst_mac, this->ifr);
-            memcpy(buffer, eth_hdr.getHeader(), ETHER_HDR_LEN);
+         
+            headerBuilder.buildETH(3, ipaddr, dst_mac, this->ifr);
+            memcpy(buffer, headerBuilder.getETHHeader(), ETHER_HDR_LEN);
 
             // IP6Header ip6_hdr = new IP6Header(this->iface);
             // ip6_hdr->build(ipaddr, this->ifr);
@@ -106,20 +105,23 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
 
         case NDP: {
           
-            ETHHeader eth_hdr;
-            eth_hdr.build(3, ipaddr, NULL, this->ifr);
-            memcpy(buffer, eth_hdr.getHeader(), ETHER_HDR_LEN);
+            // headerBuilder.buildETH(3, ipaddr, NULL, this->ifr);
+            // memcpy(buffer, headerBuilder.getETHHeader(), ETHER_HDR_LEN);
 
-            IP6Header ip6_hdr;
-            ip6_hdr.build(3, ipaddr, NULL, this->ifr);
-            memcpy(buffer + ETHER_HDR_LEN, ip6_hdr.getHeader(), IP6_HDR_LEN);
-            std::cout << "Building IP6 Header22" << std::endl;
+            // headerBuilder.buildIP6(3, ipaddr, NULL, this->ifr);
+            // memcpy(buffer + ETHER_HDR_LEN, headerBuilder.getIP6Header(), IP6_HDR_LEN);
+    
+            // headerBuilder.buildICMP6(3, ipaddr, NULL, this->ifr);
+            // memcpy(buffer + ETHER_HDR_LEN + IP6_HDR_LEN, headerBuilder.getICMP6Header(), ICMP6_HDR_LEN);
 
-            ICMP6Header icmp6_hdr;
-            icmp6_hdr.build(3, ipaddr, NULL, this->ifr);
-            memcpy(buffer + ETHER_HDR_LEN + IP6_HDR_LEN, icmp6_hdr.getHeader(), ICMP6_HDR_LEN);
+            // struct nd_neighbor_solicit icmp6_ns;
+            // memcpy(&icmp6_ns.nd_ns_target, ipaddr, 16);
+            // memcpy(buffer + ETHER_HDR_LEN + IP6_HDR_LEN + ICMP6_HDR_LEN, &icmp6_ns, sizeof(icmp6_ns));
 
-            buffer_size = ETHER_HDR_LEN + IP6_HDR_LEN + ICMP6_HDR_LEN;
+            // buffer_size = ETHER_HDR_LEN + IP6_HDR_LEN + ICMP6_HDR_LEN;
+
+            headerBuilder.createNDPPacket(buffer, &buffer_size, ipaddr, this->ifr);
+
             break;
         }
 
@@ -149,7 +151,7 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
         perror("Socket error");
         exit(1);
     }
-
+    
     if (sendto(this->sock, buffer, buffer_size, 0, (struct sockaddr*)&sa, sizeof(struct sockaddr_ll)) < 0) {
         perror("sendto() failed");
         exit(EXIT_FAILURE);

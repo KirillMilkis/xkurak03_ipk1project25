@@ -17,7 +17,7 @@ class NetworkUtils {
     static unsigned char* getIP(const char* iface, int family);
     static unsigned char* getMAC(struct ifreq* ifr);
 
-    static  unsigned short checksum(void *b, int len);
+    static unsigned short checksum(void *b, int len);
 
     static std::string macToString(unsigned char* mac);
     static std::string ipToString(const unsigned char* ip);

@@ -90,7 +90,6 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
                 if (argv[optind] != NULL && argv[optind][0] != '-') {
                     printf("Interface: %s\n", argv[optind]);
                     opts->interface = argv[optind];
-                    printf("Interface: %s\n", opts->interface.c_str());
                 } else{
                     printf("No interface specified\n");
                     print_active_interfaces();
@@ -173,7 +172,7 @@ bool process_ndp(const unsigned char* target_ip_char, TransportHandler* ndpHandl
             return true;
         }
     }
-    std::cout << "NDP response received" << std::endl; //
+    
     return false;
 }
 
@@ -238,35 +237,34 @@ int main(int argc, char *argv[]) {
     
                 });
 
-                continue; //
+
+            } else {
+
+                threads.emplace_back([&, ip_copy = std::move(current_ip)]() {
+
+                    TransportHandler transportHandlerArp(opts.interface, 1);
+    
+                    const unsigned char* target_ip_char = ip_copy.data();
+                    
+                    std::string target_ip_string = NetworkUtils::ipToString(target_ip_char);
+    
+                    ip_mac_map[target_ip_string] = process_arp(target_ip_char, &transportHandlerArp, opts.timeout);
+    
+                    TransportHandler transportHandlerIcmp(opts.interface, 2);
+                    
+                    if (ip_mac_map[target_ip_string] != "not found"){
+       
+                        ip_icmp_reply_map[target_ip_string] = process_icmp(target_ip_char, target_ip_string, transportHandlerIcmp, opts.timeout);
+                    
+                    } else {
+    
+                        ip_icmp_reply_map[target_ip_string] = false;
+                    }
+    
+                });
 
 
-            } 
-            
-            threads.emplace_back([&, ip_copy = std::move(current_ip)]() {
-
-                TransportHandler transportHandlerArp(opts.interface, 1);
-
-                const unsigned char* target_ip_char = ip_copy.data();
-                
-                std::string target_ip_string = NetworkUtils::ipToString(target_ip_char);
-
-                ip_mac_map[target_ip_string] = process_arp(target_ip_char, &transportHandlerArp, opts.timeout);
-
-                TransportHandler transportHandlerIcmp(opts.interface, 2);
-                
-                if (ip_mac_map[target_ip_string] != "not found"){
-   
-                    ip_icmp_reply_map[target_ip_string] = process_icmp(target_ip_char, target_ip_string, transportHandlerIcmp, opts.timeout);
-                
-                } else {
-
-                    ip_icmp_reply_map[target_ip_string] = false;
-                }
-
-            });
-
-            
+            }   
 
             
         }
