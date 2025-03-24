@@ -20,8 +20,7 @@ class NetworkUtils {
     static unsigned short checksum(void *b, int len);
 
     static std::string macToString(unsigned char* mac);
-    static std::string ipToString(const unsigned char* ip);
-
+    static std::string ipToString(const unsigned char* ip, int family);
 
 };
 

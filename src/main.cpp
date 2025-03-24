@@ -122,7 +122,9 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
 #define SUCCESS_SENDED 3
 
 std::map<std::string, std::string> ip_mac_map;
+std::map<std::string, std::string> ip_mac_map_v6;
 std::map<std::string, bool> ip_icmp_reply_map;
+std::map<std::string, bool> ip_icmp_reply_map_v6;
 
 
 void timer(int miliseconds){
@@ -156,7 +158,7 @@ bool process_icmp(const unsigned char* target_ip_char, std::string target_ip_str
 
     if (icmpHandler.SendRequest(target_ip_char, target_mac_char) == SUCCESS_SENDED){
         if (icmpHandler.ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
-            return true;
+           return true;
         } 
     }   
 
@@ -167,14 +169,29 @@ bool process_icmp(const unsigned char* target_ip_char, std::string target_ip_str
 bool process_ndp(const unsigned char* target_ip_char, TransportHandler* ndpHandler, long timeout_ms) {
    
     if (ndpHandler->SendRequest(target_ip_char, nullptr) == SUCCESS_SENDED) {
+        std::cout << "NDP request sent" << std::endl;
         if(ndpHandler->ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
            
-            return true;
+            return true; //
         }
     }
     
     return false;
 }
+
+bool process_icmp6(const unsigned char* target_ip_char, std::string target_ip_string, TransportHandler& icmpHandler, long timeout_ms) {
+    const unsigned char* target_mac_char = (const unsigned char*)ip_mac_map[target_ip_string].c_str();
+
+    if (icmpHandler.SendRequest(target_ip_char, target_mac_char) == SUCCESS_SENDED){
+        if (icmpHandler.ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
+           return true;
+        } 
+    }   
+
+    return false;
+
+}
+
 
 
 int main(int argc, char *argv[]) {
@@ -216,24 +233,23 @@ int main(int argc, char *argv[]) {
     
                     const unsigned char* target_ip_char = ip_copy.data();
                     
-                    std::string target_ip_string = NetworkUtils::ipToString(target_ip_char);
+                    std::string target_ip_string = NetworkUtils::ipToString(target_ip_char, AF_INET6);
     
-                    process_ndp(target_ip_char, &transportHandlerNDP, opts.timeout);
+                     if (process_ndp(target_ip_char, &transportHandlerNDP, opts.timeout)){
+                        ip_mac_map_v6[target_ip_string] =  transportHandlerNDP.GetDestMAC();   
 
-                    // transportHandlerNDP.GetDestMAC();
-
-                    // ip_mac_map[target_ip_string] 
+                     } else {
+                         ip_mac_map_v6[target_ip_string] = "not found";
+                     }
     
-                    // TransportHandler transportHandlerIcmp(opts.interface, 2);
+                    TransportHandler transportHandlerIcmpV6(opts.interface, 4);
                     
-                    // if (ip_mac_map[target_ip_string] != "not found"){
-       
-                    //     ip_icmp_reply_map[target_ip_string] = process_icmp(target_ip_char, target_ip_string, transportHandlerIcmp, opts.timeout);
+                    if (ip_mac_map_v6[target_ip_string] != "not found"){
+                        ip_icmp_reply_map_v6[target_ip_string] = process_icmp6(target_ip_char, target_ip_string, transportHandlerIcmpV6, opts.timeout);
                     
-                    // } else {
-    
-                    //     ip_icmp_reply_map[target_ip_string] = false;
-                    // }
+                    } else {
+                        ip_icmp_reply_map_v6[target_ip_string] = false;
+                    }
     
                 });
 
@@ -246,7 +262,7 @@ int main(int argc, char *argv[]) {
     
                     const unsigned char* target_ip_char = ip_copy.data();
                     
-                    std::string target_ip_string = NetworkUtils::ipToString(target_ip_char);
+                    std::string target_ip_string = NetworkUtils::ipToString(target_ip_char, AF_INET);
     
                     ip_mac_map[target_ip_string] = process_arp(target_ip_char, &transportHandlerArp, opts.timeout);
     
@@ -270,15 +286,17 @@ int main(int argc, char *argv[]) {
         }
        
 
+       
         for (auto& thread : threads) {
             thread.join();
         }
-
 
        
         
 
     } while(ipManager.useNextSubnet());
+
+    
 
 
     for (auto& [ip, mac] : ip_mac_map) {
@@ -296,6 +314,28 @@ int main(int argc, char *argv[]) {
         printf(", ");
 
         if(ip_icmp_reply_map[ip]){
+            printf("icmp OK\n");
+        } else {
+            printf("icmp FAIL\n");
+        }
+
+    }
+
+    for (auto& [ip, mac] : ip_mac_map_v6) {
+        unsigned char mac_c[6];
+        
+        printf("%s arp ", ip.c_str());
+        
+        if(mac != "not found"){
+            sscanf(mac.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &mac_c[0], &mac_c[1], &mac_c[2], &mac_c[3], &mac_c[4], &mac_c[5]);
+            printf("(%02x-%02x-%02x-%02x-%02x-%02x)", mac_c[0], mac_c[1], mac_c[2], mac_c[3], mac_c[4], mac_c[5]);
+        } else {
+            printf("FAIL");
+        }
+        
+        printf(", ");
+
+        if(ip_icmp_reply_map_v6[ip]){
             printf("icmp OK\n");
         } else {
             printf("icmp FAIL\n");

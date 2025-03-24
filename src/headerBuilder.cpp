@@ -71,7 +71,7 @@ class HeaderBuilder {
             struct icmp_hdr icmp_hdr;
             int icmp_hdr_id;
             struct ip6_hdr ip6_hdr;
-            struct icmp6_hdr icmp6_hdr;
+            struct icmp6_hdr icmpv6_hdr;
             struct nd_neighbor_solicit ns;
 
             const unsigned char broadcast_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; 
@@ -223,15 +223,15 @@ class HeaderBuilder {
 
   
       
-        void buildICMP6(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
+        void buildNS(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
 
             
 
             memset(&ns, 0, sizeof(ns));
             this->ns.nd_ns_hdr.icmp6_type = ND_NEIGHBOR_SOLICIT;
             this->ns.nd_ns_hdr.icmp6_code = 0;
-            this->ns.nd_ns_hdr.icmp6_cksum = 0; // Перед расчетом = 0
-            memcpy(&ns.nd_ns_target, dst_ip, 16); // Целевой IPv6
+            this->ns.nd_ns_hdr.icmp6_cksum = 0; 
+            memcpy(&ns.nd_ns_target, dst_ip, 16); 
 
             this->ip6_hdr.ip6_plen = htons(sizeof(ns));
 
@@ -249,20 +249,95 @@ class HeaderBuilder {
             memset(pseudo_header.zero, 0, sizeof(pseudo_header.zero));
             pseudo_header.next_header = IPPROTO_ICMPV6;
         
-            // ---- 5. Объединение данных в один буфер ----
+        
             uint8_t temp_buffer[sizeof(pseudo_header) + sizeof(this->ns)];
             memcpy(temp_buffer, &pseudo_header, sizeof(pseudo_header));
             memcpy(temp_buffer + sizeof(pseudo_header), &ns, sizeof(this->ns));
         
-            // ---- 6. Подсчет контрольной суммы ----
+          
             ns.nd_ns_hdr.icmp6_cksum = NetworkUtils::checksum(temp_buffer, sizeof(temp_buffer));
         
 
         }
 
-        const struct nd_neighbor_solicit* getICMP6Header() {
+        const struct nd_neighbor_solicit* getNSHeader() {
             return &this->ns;
         }
+
+
+
+        void buildICMP6(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
+
+            
+
+            // memset(&icmpv6_hdr, 0, sizeof(icmpv6_hdr));
+            // this->icmpv6_hdr.icmp6_type = 128; // Echo Request
+            // this->icmpv6_hdr.icmp6_code = 0;
+            // this->icmp_hdr_id = getpid();
+            // this->icmpv6_hdr.icmp6_dataun.icmp6_un_data16[0] = htons(this->icmp_hdr_id);
+            // this->icmpv6_hdr.icmp6_dataun.icmp6_un_data16[1] = htons(1);
+            // this->icmpv6_hdr.icmp6_cksum = 0; // Checksum will be calculated later
+
+            // // Calculate ICMPv6 checksum
+            // struct {
+            //     struct in6_addr src;
+            //     struct in6_addr dst;
+            //     uint32_t length;
+            //     uint8_t zero[3];
+            //     uint8_t next_header;
+            // } pseudo_header;
+
+            // memset(&pseudo_header, 0, sizeof(pseudo_header));
+            // memcpy(&pseudo_header.src, &this->ip6_hdr.ip6_src, sizeof(struct in6_addr));
+            // memcpy(&pseudo_header.dst, &this->ip6_hdr.ip6_dst, sizeof(struct in6_addr));
+            // pseudo_header.length = htonl(sizeof(this->icmpv6_hdr));
+            // pseudo_header.next_header = IPPROTO_ICMPV6;
+
+            // unsigned char checksum_buffer[sizeof(pseudo_header) + sizeof(this->icmpv6_hdr)];
+            // memcpy(checksum_buffer, &pseudo_header, sizeof(pseudo_header));
+            // memcpy(checksum_buffer + sizeof(pseudo_header), &this->icmpv6_hdr, sizeof(this->icmpv6_hdr));
+
+            // icmpv6_hdr.icmp6_cksum = NetworkUtils::checksum(checksum_buffer, sizeof(checksum_buffer));
+
+            memset(&icmpv6_hdr, 0, sizeof(icmpv6_hdr));
+    
+            // Заполняем ICMPv6 заголовок
+            icmpv6_hdr.icmp6_type = 128; // Echo Request
+            icmpv6_hdr.icmp6_code = 0;
+            icmpv6_hdr.icmp6_cksum = 0; // Считаем позже
+            icmpv6_hdr.icmp6_dataun.icmp6_un_data16[0] = htons(getpid()); // ID процесса
+            icmpv6_hdr.icmp6_dataun.icmp6_un_data16[1] = htons(1); // Sequence number
+        
+            // IPv6 заголовок
+            this->ip6_hdr.ip6_plen = htons(sizeof(icmpv6_hdr));
+   
+            struct {
+                struct in6_addr src;
+                struct in6_addr dst;
+                uint32_t length;
+                uint8_t zero[3];
+                uint8_t next_header;
+            } pseudo_header;
+        
+            memset(&pseudo_header, 0, sizeof(pseudo_header));
+            memcpy(&pseudo_header.src, &this->ip6_hdr.ip6_src, sizeof(struct in6_addr));
+            memcpy(&pseudo_header.dst, &this->ip6_hdr.ip6_dst, sizeof(struct in6_addr));
+            pseudo_header.length = htonl(sizeof(icmpv6_hdr));
+            pseudo_header.next_header = IPPROTO_ICMPV6;
+        
+            
+            uint8_t temp_buffer[sizeof(pseudo_header) + sizeof(icmpv6_hdr)];
+            memcpy(temp_buffer, &pseudo_header, sizeof(pseudo_header));
+            memcpy(temp_buffer + sizeof(pseudo_header), &icmpv6_hdr, sizeof(icmpv6_hdr));
+        
+            icmpv6_hdr.icmp6_cksum = NetworkUtils::checksum((uint16_t*)temp_buffer, sizeof(temp_buffer));
+        }
+
+        const struct icmp6_hdr* getICMP6Header() {
+            return &this->icmpv6_hdr;
+        }
+
+
 
     
     };

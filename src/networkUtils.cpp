@@ -7,6 +7,7 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 
 
@@ -141,9 +142,17 @@ std::string NetworkUtils::macToString(unsigned char* mac){
     return std::string(mac_c);
 }
 
-std::string NetworkUtils::ipToString(const unsigned char* ip){
-    char ip_c[16];
-    sprintf(ip_c, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+
+std::string NetworkUtils::ipToString(const unsigned char* ip, int family) {
+    char ip_c[INET6_ADDRSTRLEN];
+
+    if (family == AF_INET) {  // IPv4
+        snprintf(ip_c, sizeof(ip_c), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+    } else if (family == AF_INET6) {  // IPv6
+        inet_ntop(AF_INET6, ip, ip_c, sizeof(ip_c));
+    } else {
+        return "Invalid IP family";
+    }
 
     return std::string(ip_c);
 }

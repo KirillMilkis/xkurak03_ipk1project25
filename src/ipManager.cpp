@@ -92,9 +92,6 @@ bool IpManager::calculateIp(std::array<T, N>& current_ip, std::array<T, N>& netw
         }
 
         current_ip = this->stringToBytes<N>(subnet_addr);
-        for(int i = 0; i < 16; i++) {
-            printf("current_ip[%d]: %d\n", i, current_ip[i]);
-        }
         network_ip = this->biteAND(current_ip, current_mask);
         current_ip = network_ip;
 

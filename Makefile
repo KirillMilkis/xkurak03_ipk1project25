@@ -1,6 +1,6 @@
 CXX = g++
 
-CXXFLAGS = -std=c++17 -Wall -Wextra  -I/opt/homebrew/Cellar/libnet/1.3/include
+CXXFLAGS = -std=c++17 -g -Wall -Wextra  -I/opt/homebrew/Cellar/libnet/1.3/include
 
 SRC_DIR = src
 
