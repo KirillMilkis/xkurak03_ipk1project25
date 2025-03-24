@@ -29,7 +29,7 @@ bool IpManager::useNextSubnet() {
         return false;
     }
     
-    if(!this->current_subnet.empty()) {
+    if(!this->current_subnet.empty()) { //
         return true;
     }
 
@@ -76,7 +76,8 @@ bool IpManager::calculateIp(std::array<T, N>& current_ip, std::array<T, N>& netw
         std::string subnet_mask = (del_place == std::string::npos) ? std::to_string(ip_size) : this->current_subnet.substr(del_place + 1);
         std::string subnet_addr = (del_place == std::string::npos) ? this->current_subnet : this->current_subnet.substr(0, del_place);
         
-
+        std::cout << "Subnet mask: " << subnet_mask << std::endl;
+        std::cout << "Subnet addr: " << subnet_addr << std::endl;
         int maskBits = std::stoi(subnet_mask);
         for (int i = 0; i < N; i++) {
             if (maskBits >= 8) {
@@ -91,6 +92,9 @@ bool IpManager::calculateIp(std::array<T, N>& current_ip, std::array<T, N>& netw
         }
 
         current_ip = this->stringToBytes<N>(subnet_addr);
+        for(int i = 0; i < 16; i++) {
+            printf("current_ip[%d]: %d\n", i, current_ip[i]);
+        }
         network_ip = this->biteAND(current_ip, current_mask);
         current_ip = network_ip;
 

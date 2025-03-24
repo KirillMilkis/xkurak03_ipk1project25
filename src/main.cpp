@@ -29,15 +29,8 @@ void interrupt_sniffer(int signum){
 static struct option long_options[] = {
     {"interface", required_argument, NULL, 'i'},
     {"port", optional_argument, NULL, 'p'},
-    {"port-source", optional_argument, NULL, 1},
-    {"port-destination", optional_argument, NULL, 2},
-    {"arp", no_argument, NULL, 3},
-    {"ndp", no_argument, NULL, 4},
-    {"icmp4", no_argument, NULL, 5},
-    {"icmp6", no_argument, NULL, 6},
-    {"igmp", no_argument, NULL, 7},
-    {"mld", no_argument, NULL, 8},
-    {"number", optional_argument, NULL, 'n'},
+    {"wait", optional_argument, NULL, 'w'},
+    {"subnet", required_argument, NULL, 's'},
     {0, 0, 0, 0}
 };
 
@@ -149,8 +142,6 @@ std::string process_arp(const unsigned char* target_ip_char, TransportHandler* a
         if(arpHandler->ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
             std::string result_mac = arpHandler->GetDestMAC();
 
-            // std::cout << "RESULT MAC: " << result_mac << std::endl;
-
             if (!result_mac.empty()) {
                 return result_mac;
             }
@@ -172,6 +163,18 @@ bool process_icmp(const unsigned char* target_ip_char, std::string target_ip_str
 
     return false;
 
+}
+
+bool process_ndp(const unsigned char* target_ip_char, TransportHandler* ndpHandler, long timeout_ms) {
+   
+    if (ndpHandler->SendRequest(target_ip_char, nullptr) == SUCCESS_SENDED) {
+        if(ndpHandler->ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
+           
+            return true;
+        }
+    }
+    std::cout << "NDP response received" << std::endl; //
+    return false;
 }
 
 
@@ -206,7 +209,41 @@ int main(int argc, char *argv[]) {
 
         while (ipManager.getNextIp() !=  nullptr) {
             
-            std::vector<unsigned char> current_ip(ipManager.getCurrentIp(), ipManager.getCurrentIp() + 4);
+            std::vector<unsigned char> current_ip(ipManager.getCurrentIp(), ipManager.getCurrentIp() + 16);
+
+            if(IpManager::isIPv6(ipManager.getCurrentIpString())) {
+
+                threads.emplace_back([&, ip_copy = std::move(current_ip)]() {
+
+                    TransportHandler transportHandlerNDP(opts.interface, 3);
+    
+                    const unsigned char* target_ip_char = ip_copy.data();
+                    
+                    std::string target_ip_string = NetworkUtils::ipToString(target_ip_char);
+    
+                    process_ndp(target_ip_char, &transportHandlerNDP, opts.timeout);
+
+                    // transportHandlerNDP.GetDestMAC();
+
+                    // ip_mac_map[target_ip_string] 
+    
+                    // TransportHandler transportHandlerIcmp(opts.interface, 2);
+                    
+                    // if (ip_mac_map[target_ip_string] != "not found"){
+       
+                    //     ip_icmp_reply_map[target_ip_string] = process_icmp(target_ip_char, target_ip_string, transportHandlerIcmp, opts.timeout);
+                    
+                    // } else {
+    
+                    //     ip_icmp_reply_map[target_ip_string] = false;
+                    // }
+    
+                });
+
+                continue;
+
+
+            } 
             
             threads.emplace_back([&, ip_copy = std::move(current_ip)]() {
 
@@ -230,6 +267,8 @@ int main(int argc, char *argv[]) {
                 }
 
             });
+
+            
 
             
         }

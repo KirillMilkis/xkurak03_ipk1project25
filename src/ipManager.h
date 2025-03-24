@@ -16,21 +16,26 @@ class IpManager {
         IpManager(std::vector<std::string> subnets)
          {  
             for(const auto& subnet : subnets) {
+
+                this->is_ipv6 = false;
+
                 if(isIPv6(subnet)) {
                     this->ipv6_subnets.push_back(subnet);
                 } else {
                     this->ipv4_subnets.push_back(subnet);
                 }
+
                 if(this->ipv4_subnets.size() > 0) {
                     this->current_subnet = this->ipv4_subnets[0];
                 } else if(this->ipv6_subnets.size() > 0) {
                     this->current_subnet = this->ipv6_subnets[0];
+                    std::cout << "Setting ipv6" << std::endl;
                     this->is_ipv6 = true;
                 }
              
                 this->current_ip_int = 0;
                 this->is_first_ip = true;
-                this->is_ipv6 = false;
+    
                 this->subnet_num = 0;
                 }
             }
@@ -40,6 +45,7 @@ class IpManager {
         unsigned char* getCurrentIp();
 
         std::string getCurrentIpString();
+        static bool isIPv6(const std::string& ip);
 
         int printAllSubnets();
         int printSubnetList(std::vector<std::string> subnets_to_print, int ip_len) ;
@@ -69,7 +75,7 @@ class IpManager {
         unsigned int stringToInt(std::string ip);
         unsigned char* intToChar(unsigned int ip_int);
         std::string intToString(unsigned int ip_int);
-        bool isIPv6(const std::string& ip);
+        
 
         template <typename T, size_t N>
         std::array<unsigned char, N> biteAND(const std::array<T, N>& vector1, const std::array<T, N>& vector2);

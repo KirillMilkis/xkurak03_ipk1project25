@@ -20,17 +20,21 @@
 #include "networkUtils.h"
 
 
+#include <netinet/ip6.h>
+#include <netinet/icmp6.h>
+
+
 #define IP4_HDR_LEN 20
 #define ETHER_HDR_LEN 14
 #define ICMP_HDR_LEN 8
 #define ARP_HDR_LEN 28
-#define ICMPV6_HDR_LEN 8
+#define ICMP6_HDR_LEN 32 
 #define IP6_HDR_LEN 40
 
 #define ARP 1
 #define ICMP 2
-#define ICMPv6 3
-#define NDP 4
+#define ICMPv6 4
+#define NDP 3
 
 typedef struct ARP_Header {
     uint16_t ar_hrd;   // Hardware type (Ethernet = 1)
@@ -69,7 +73,7 @@ class Header {
 
         public:
             void build(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) override {
-                // std::cout << "Building ETH Header" << std::endl;
+          
 
                 switch(protocol){
                     case ARP:
@@ -83,8 +87,10 @@ class Header {
                         break;
                 }
 
+
                 switch(protocol){
                     case ARP:
+                    case NDP:
                         memcpy(this->eth_hdr.h_dest, broadcast_mac, 6); 
                         break;
                     case ICMPv6:
@@ -94,8 +100,10 @@ class Header {
                         memcpy(this->eth_hdr.h_dest, dst_mac, 6); 
                         break;
                 }
+              
 
                 memcpy(this->eth_hdr.h_source, NetworkUtils::getMAC(&ifr), 6); 
+
 
             }
 
@@ -167,7 +175,7 @@ class Header {
                     break;
                 case ICMPv6:
                     ip_hdr.protocol = IPPROTO_ICMPV6;
-                    ip_hdr.tot_len = htons(IP4_HDR_LEN + ICMPV6_HDR_LEN);
+                    ip_hdr.tot_len = htons(IP4_HDR_LEN + ICMP6_HDR_LEN);
                     break;
                 default:
                     ip_hdr.protocol = IPPROTO_ICMP;
@@ -210,3 +218,53 @@ class Header {
             return &this->icmp_hdr;
         }
     };
+
+
+    class IP6Header : public Header {
+    private:
+        struct ip6_hdr ip6_hdr;
+        struct ifreq ifr;
+    public:
+        void build(int protocol, const unsigned char* dst_ip,const  unsigned char* dst_mac, struct ifreq ifr) override {
+            // std::cout << "Building IP6 Header" << std::endl;
+
+            ip6_hdr.ip6_flow = htonl((6 << 28) | (0 << 20) | 0);
+            ip6_hdr.ip6_plen = htons(ICMP6_HDR_LEN); 
+            ip6_hdr.ip6_nxt = IPPROTO_ICMPV6; 
+            ip6_hdr.ip6_hlim = 255; 
+            memcpy(&ip6_hdr.ip6_src, NetworkUtils::getIP(this->ifr.ifr_name, AF_INET6), 16);
+            // inet_pton(AF_INET6, NetworkUtils::getIP(this->ifr.ifr_name, AF_INET6), &ip6_hdr.ip6_src); 
+            memcpy(&ip6_hdr.ip6_dst, dst_ip, 16);
+
+        }
+
+        const struct ip6_hdr* getHeader() {
+            return &this->ip6_hdr;
+        }
+
+    };
+
+
+    class ICMP6Header : public Header {
+    private:
+        struct icmp6_hdr icmp6_hdr;
+        struct ifreq ifr;
+    public:
+        void build(int protocol, const unsigned char* dst_ip,const  unsigned char* dst_mac, struct ifreq ifr) override {
+            // std::cout << "Building ICMP6 Header" << std::endl;
+
+            icmp6_hdr.icmp6_type = 135; 
+            icmp6_hdr.icmp6_code = 0;
+            icmp6_hdr.icmp6_cksum = 0; 
+            memset(&icmp6_hdr.icmp6_dataun, 0, sizeof(icmp6_hdr.icmp6_dataun));
+            inet_pton(AF_INET6, (const char*)dst_ip, &icmp6_hdr.icmp6_dataun); 
+            icmp6_hdr.icmp6_cksum = NetworkUtils::checksum(&icmp6_hdr, ICMP6_HDR_LEN);
+
+        }
+
+        const struct icmp6_hdr* getHeader() {
+            return &this->icmp6_hdr;
+        }
+    };
+
+

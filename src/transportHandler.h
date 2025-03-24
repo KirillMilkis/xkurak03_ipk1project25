@@ -53,6 +53,8 @@ class TransportHandler {
         unsigned char dst_mac[6];  // Destination MAC
         unsigned char dst_ip[4];  // Destination IP
 
+        unsigned char dst_ip6[4];  // Destination IP
+
 
     public:
 
@@ -73,6 +75,8 @@ class TransportHandler {
         bool testArpResponse(const unsigned char* buffer);
 
         bool testICMPResponse(const unsigned char* buffer);
+
+        bool testNDPResponse(const unsigned char* buffer);
 
         std::string GetDestMAC();
 
