@@ -79,9 +79,7 @@ class HeaderBuilder {
         public:
             void buildETH(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
           
-
                 memset(&this->eth_hdr, 0, sizeof(this->eth_hdr));
-            
 
                 switch(protocol){
                     case ARP:
@@ -104,6 +102,7 @@ class HeaderBuilder {
                     case NDP:
                         memcpy(this->eth_hdr.h_dest, "\x33\x33\xff\x00\x00\x01", 6); // IPv6 multicast для NS
                         break;
+                    case ICMP:
                     case ICMPv6:
                         memcpy(this->eth_hdr.h_dest, dst_mac, 6); 
                         break;
@@ -225,12 +224,10 @@ class HeaderBuilder {
       
         void buildNS(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
 
-            
-
             memset(&ns, 0, sizeof(ns));
             this->ns.nd_ns_hdr.icmp6_type = ND_NEIGHBOR_SOLICIT;
             this->ns.nd_ns_hdr.icmp6_code = 0;
-            this->ns.nd_ns_hdr.icmp6_cksum = 0; 
+            this->ns.nd_ns_hdr.icmp6_cksum = 0;
             memcpy(&ns.nd_ns_target, dst_ip, 16); 
 
             this->ip6_hdr.ip6_plen = htons(sizeof(ns));

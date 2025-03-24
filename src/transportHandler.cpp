@@ -35,8 +35,9 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
     } else if(protocol == ICMPv6 || protocol == NDP) {
         memcpy(this->dst_ip6, ipaddr, 16);
     }
-   
 
+    // memcpy(this->dst_mac, dst_mac, 6);
+   
     struct sockaddr_ll sa;
 
     int buffer_size;
@@ -73,6 +74,10 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
             // ETHHeader eth_hdr;
             headerBuilder.buildETH(2, ipaddr, dst_mac, this->ifr);
             memcpy(buffer, headerBuilder.getETHHeader(), ETHER_HDR_LEN);
+
+            // for(int i = 0; i < 6; i++) {
+            //     std::cout << dst_mac[i] << std::endl;
+            // }
 
             // IPHeader ip_hdr;
             headerBuilder.buildIP(2, ipaddr, dst_mac, this->ifr);
@@ -186,6 +191,8 @@ bool TransportHandler::testArpResponse(const unsigned char* buffer) {
         return false;
     }
 
+    memcpy(this->dst_mac_i, eth_hdr->h_source, 6);
+
     return true; ////
 }
 
@@ -267,6 +274,7 @@ bool TransportHandler::testICMPResponse(const unsigned char* buffer){
     if(memcmp(eth_hdr->h_dest, NetworkUtils::getMAC(&this->ifr), 6) != 0) {
         std::cout << "Not a response to our request4" << std::endl;
         return false;
+
     }
 
     // if(icmp_hdr->id != this->icmp_hdr_id) {
@@ -278,6 +286,7 @@ bool TransportHandler::testICMPResponse(const unsigned char* buffer){
         std::cout << "Not an icmp ehco reply5" << std::endl;
         return false;
     }
+
 
     return true;
 }
@@ -321,7 +330,7 @@ bool TransportHandler::testNDPResponse(const unsigned char* buffer) {
         //     return false;
         // }
 
-        memcpy(this->dst_mac, received_mac, 6);
+        memcpy(this->dst_mac_i, received_mac, 6);
     }
 
     return true;
@@ -353,17 +362,12 @@ int TransportHandler::ListenToResponce(const unsigned char* target_ip, long int 
             }
         }
 
-        ARP_HDR* arp_hdr;
-        if(this->protocol == ARP){
-            arp_hdr = (ARP_HDR*)(buffer + ETHER_HDR_LEN);
-        }
 
         switch(this->protocol) {
             case ARP:
                 if (!this->testArpResponse(buffer)){
                     continue;
                 }
-                memcpy(this->dst_mac, arp_hdr->ar_sha, 6);
             
                 break;
             case ICMP:
@@ -391,10 +395,10 @@ int TransportHandler::ListenToResponce(const unsigned char* target_ip, long int 
 
 std::string TransportHandler::GetDestMAC() {
 
-    if (this->dst_mac == NULL) {
+    if (this->dst_mac_i == NULL) {
         return "not found";
     }
 
-    std::cout << "Getting MAC " << NetworkUtils::macToString(this->dst_mac) << std::endl;
-    return NetworkUtils::macToString(this->dst_mac);
+    std::cout << "Getting MAC " << NetworkUtils::macToString(this->dst_mac_i) << std::endl;
+    return NetworkUtils::macToString(this->dst_mac_i);
 }

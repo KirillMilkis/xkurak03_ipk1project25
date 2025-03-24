@@ -50,7 +50,7 @@ class TransportHandler {
         unsigned char src_mac[6];  // Source MAC
         unsigned char src_ip[4];  // Source IP
 
-        unsigned char dst_mac[6];  // Destination MAC
+        unsigned char dst_mac_i[6];  // Destination MAC
         unsigned char dst_ip[4];  // Destination IP
 
         unsigned char dst_ip6[16];  // Destination IP

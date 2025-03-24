@@ -137,24 +137,22 @@ void timer(int miliseconds){
 #include <atomic>
 #include  "icmpHandler.h"
 
-std::string process_arp(const unsigned char* target_ip_char, TransportHandler* arpHandler, long timeout_ms) {
+bool process_arp(const unsigned char* target_ip_char, TransportHandler* arpHandler, long timeout_ms) {
 
     if (arpHandler->SendRequest(target_ip_char, nullptr) == SUCCESS_SENDED) {
         if(arpHandler->ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
-            std::string result_mac = arpHandler->GetDestMAC();
 
-            if (!result_mac.empty()) {
-                return result_mac;
-            }
+           return true;
         }
     }
-
     
-    return "not found";
+    return false;
 }
 
 bool process_icmp(const unsigned char* target_ip_char, std::string target_ip_string, TransportHandler& icmpHandler, long timeout_ms) {
     const unsigned char* target_mac_char = (const unsigned char*)ip_mac_map[target_ip_string].c_str();
+
+    std::cout << "Target MAC: " << ip_mac_map[target_ip_string] << std::endl;
 
     if (icmpHandler.SendRequest(target_ip_char, target_mac_char) == SUCCESS_SENDED){
         if (icmpHandler.ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
@@ -180,7 +178,7 @@ bool process_ndp(const unsigned char* target_ip_char, TransportHandler* ndpHandl
 }
 
 bool process_icmp6(const unsigned char* target_ip_char, std::string target_ip_string, TransportHandler& icmpHandler, long timeout_ms) {
-    const unsigned char* target_mac_char = (const unsigned char*)ip_mac_map[target_ip_string].c_str();
+    const unsigned char* target_mac_char = (const unsigned char*)ip_mac_map_v6[target_ip_string].c_str();
 
     if (icmpHandler.SendRequest(target_ip_char, target_mac_char) == SUCCESS_SENDED){
         if (icmpHandler.ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
@@ -264,8 +262,12 @@ int main(int argc, char *argv[]) {
                     
                     std::string target_ip_string = NetworkUtils::ipToString(target_ip_char, AF_INET);
     
-                    ip_mac_map[target_ip_string] = process_arp(target_ip_char, &transportHandlerArp, opts.timeout);
-    
+                    if(process_arp(target_ip_char, &transportHandlerArp, opts.timeout)){
+                        ip_mac_map[target_ip_string] = transportHandlerArp.GetDestMAC();
+                    } else {
+                        ip_mac_map[target_ip_string] = "not found";
+                    }
+
                     TransportHandler transportHandlerIcmp(opts.interface, 2);
                     
                     if (ip_mac_map[target_ip_string] != "not found"){
