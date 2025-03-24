@@ -69,7 +69,7 @@ class Header {
 
         public:
             void build(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) override {
-                std::cout << "Building ETH Header" << std::endl;
+                // std::cout << "Building ETH Header" << std::endl;
 
                 switch(protocol){
                     case ARP:
@@ -116,7 +116,7 @@ class Header {
 
         public:
             void build(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) override {
-                std::cout << "Building ARP Header" << std::endl;
+                // std::cout << "Building ARP Header" << std::endl;
 
                 arp_hdr.ar_hrd = htons(ARPHRD_ETHER);  
                 arp_hdr.ar_pro = htons(ETH_P_IP);       
@@ -150,7 +150,7 @@ class Header {
 
     public:
         void build(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) override {
-            std::cout << "Building IP Header" << std::endl;
+            // std::cout << "Building IP Header" << std::endl;
             ip_hdr.ihl = 5;
             ip_hdr.version = 4;
             ip_hdr.tos = 0;
@@ -194,7 +194,7 @@ class Header {
 
     public:
         void build(int protocol, const unsigned char* dst_ip,const  unsigned char* dst_mac, struct ifreq ifr) override {
-            std::cout << "Building ICMP Header" << std::endl;
+            // std::cout << "Building ICMP Header" << std::endl;
 
             memset(&icmp_hdr, 0, sizeof(icmp_hdr));
             icmp_hdr.type = 8;

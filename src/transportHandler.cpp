@@ -118,9 +118,7 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
 
     }
     
-    // memset(buffer, 0, ETH_FRAME_LEN);  // Заполняем буфер кадра
-    // memcpy(buffer, &eth_hdr, ETHER_HDR_LEN);
-    // memcpy(buffer + ETHER_HDR_LEN, &arp_hdr, ARP_HDR_LEN);
+ 
     int sock_type = 0;
 
     switch(this->protocol) {
@@ -178,7 +176,12 @@ bool TransportHandler::testArpResponse(const unsigned char* buffer) {
         return false;
     }
 
-    return true;
+    if (memcmp(arp_hdr->ar_sip, this->dst_ip, 4) != 0) {
+        // std::cout << "Not a response to our request" << std::endl;
+        return false;
+    }
+
+    return true; //
 }
 
 
@@ -233,8 +236,6 @@ bool TransportHandler::testICMPResponse(const unsigned char* buffer){
 
 int TransportHandler::ListenToResponce(const unsigned char* target_ip, long int timeout_ms) {
 
-    std::cout << "Listening to response" << std::endl;
-
     while(1){
         memset(buffer, 0, BUFSIZE);
 
@@ -264,6 +265,7 @@ int TransportHandler::ListenToResponce(const unsigned char* target_ip, long int 
                     continue;
                 }
                 memcpy(this->dst_mac, arp_hdr->ar_sha, 6);
+            
                 break;
             case ICMP:
                 if (!this->testICMPResponse(buffer)){
@@ -286,5 +288,6 @@ int TransportHandler::ListenToResponce(const unsigned char* target_ip, long int 
 }
 
 std::string TransportHandler::GetDestMAC() {
+    std::cout << "Getting MAC " << NetworkUtils::macToString(this->dst_mac) << std::endl;
     return NetworkUtils::macToString(this->dst_mac);
 }

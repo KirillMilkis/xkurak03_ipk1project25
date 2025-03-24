@@ -63,6 +63,7 @@ class TransportHandler {
             iface.copy(ifr.ifr_name, IFNAMSIZ);
             
             buffer = (unsigned char*)malloc(sizeof(unsigned char) * ETH_FRAME_LEN);
+
         }
 
         int SendRequest(const unsigned char* ipaddr, const unsigned char* dst_mac);

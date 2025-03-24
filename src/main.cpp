@@ -143,11 +143,13 @@ void timer(int miliseconds){
 #include <atomic>
 #include  "icmpHandler.h"
 
-std::string process_arp(const unsigned char* target_ip_char, TransportHandler& arpHandler, long timeout_ms) {
+std::string process_arp(const unsigned char* target_ip_char, TransportHandler* arpHandler, long timeout_ms) {
 
-    if (arpHandler.SendRequest(target_ip_char, nullptr) == SUCCESS_SENDED) {
-        if(arpHandler.ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
-            std::string result_mac = arpHandler.GetDestMAC();
+    if (arpHandler->SendRequest(target_ip_char, nullptr) == SUCCESS_SENDED) {
+        if(arpHandler->ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
+            std::string result_mac = arpHandler->GetDestMAC();
+
+            // std::cout << "RESULT MAC: " << result_mac << std::endl;
 
             if (!result_mac.empty()) {
                 return result_mac;
@@ -208,15 +210,13 @@ int main(int argc, char *argv[]) {
             
             threads.emplace_back([&, ip_copy = std::move(current_ip)]() {
 
-                // ARPHandler arpHandler(opts.interface);
-
                 TransportHandler transportHandlerArp(opts.interface, 1);
 
                 const unsigned char* target_ip_char = ip_copy.data();
                 
                 std::string target_ip_string = NetworkUtils::ipToString(target_ip_char);
 
-                ip_mac_map[target_ip_string] = process_arp(target_ip_char, transportHandlerArp, opts.timeout);
+                ip_mac_map[target_ip_string] = process_arp(target_ip_char, &transportHandlerArp, opts.timeout);
 
                 TransportHandler transportHandlerIcmp(opts.interface, 2);
                 
