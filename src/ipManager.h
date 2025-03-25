@@ -12,6 +12,10 @@
 #define INET6_ADDRSTRLEN 46
 
 
+#define DEFAULT_SUBNET_MASK "32"
+#include <regex>
+
+
 
 
 class IpManager {
@@ -30,9 +34,9 @@ class IpManager {
 
                 if(this->ipv4_subnets.size() > 0) {
                     this->current_subnet = this->ipv4_subnets[0];
+                    this->is_ipv6 = false;
                 } else if(this->ipv6_subnets.size() > 0) {
                     this->current_subnet = this->ipv6_subnets[0];
-                    std::cout << "Setting ipv6" << std::endl;
                     this->is_ipv6 = true;
                 }
              
@@ -50,8 +54,8 @@ class IpManager {
         std::string getCurrentIpString();
         static bool isIPv6(const std::string& ip);
 
-        int printAllSubnets();
-        int printSubnetList(std::vector<std::string> subnets_to_print, int ip_len) ;
+        void printAllSubnets();
+        bool printSubnetList(std::vector<std::string> subnets_to_print, int ip_len) ;
 
     private:
         // std::vector<std::string> subnet;
@@ -100,7 +104,13 @@ class IpManager {
         template <typename T, size_t N>
         bool calculateIp(std::array<T, N>& current_ip, std::array<T, N>& network_ip, std::array<T, N>& current_mask, int ip_size);
         
+        bool isValidSubnetMask(const std::string& subnet_mask);
 
+        bool isValidIPv4(const std::string& ip);
+
+        bool isValidIPv6(const std::string& ip);
+
+        bool checkSubnet(std::string subnet_mask, std::string subnet_addr);
 };
 
 #endif // IPMANAGER_H

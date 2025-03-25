@@ -13,9 +13,9 @@ void interrupt_sniffer(int signum){
 
 static struct option long_options[] = {
     {"interface", optional_argument, NULL, 'i'},
-    {"port", optional_argument, NULL, 'p'},
     {"wait", optional_argument, NULL, 'w'},
     {"subnet", optional_argument, NULL, 's'},
+    {"help", no_argument, NULL, 'h'},
     {0, 0, 0, 0}
 };
 
@@ -71,7 +71,7 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
 
     opts->timeout = 5000;
 
-    while((opt = getopt_long(argc, argv, "i::w::s::", long_options, NULL)) != -1) {
+    while((opt = getopt_long(argc, argv, "i::w::s::h", long_options, NULL)) != -1) {
         switch(opt) {
             case 'i':
                 if (optarg == NULL && optind < argc
@@ -98,7 +98,10 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
                     opts->subnet.push_back(optarg);
                 }
                 break;
-            case '?':
+            case 'h':
+                fprintf(stderr, "Usage: %s [-i interface | --interface interface] {-w timeout} [-s ipv4-subnet | -s ipv6-subnet | --subnet ipv4-subnet | --subnet ipv6-subnet]\n", argv[0]);
+                exit(EXIT_SUCCESS);
+                case '?':
                 fprintf(stderr, "Unknown option: %s\n", argv[optind - 1]);
                 break;
             case ':':
@@ -118,15 +121,10 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
-}
-
-std::map<uint8_t, std::pair<uint8_t, uint8_t>> protocol_rules = {
-    {AF_INET, {1, 2}},
-    {AF_INET6, {3, 4}},
-};
-
-void timer(int miliseconds){
-    std::this_thread::sleep_for(std::chrono::milliseconds(miliseconds));
+    if(opts->timeout < 0) {
+        fprintf(stderr, "Invalid timeout value\n");
+        exit(EXIT_FAILURE);
+    }
 
 }
 
@@ -275,14 +273,12 @@ int main(int argc, char *argv[]) {
     std::map<std::string, bool> ip_icmp_reply_map;
     std::map<std::string, bool> ip_icmp_reply_map_v6;
 
-    if(opts.interface.empty()) {
-        print_active_interfaces();
-    }
-
     printf("Interface: %s\n", opts.interface.c_str());  
 
     IpManager ipManager(opts.subnet);
+    
     ipManager.printAllSubnets();
+
 
     do {
 
@@ -304,9 +300,7 @@ int main(int argc, char *argv[]) {
                     scan_adresses(AF_INET, ip_mac_map, ip_icmp_reply_map, current_ip_copy, opts);
                 }
 
-
             });
-
 
             cv.notify_one();
 

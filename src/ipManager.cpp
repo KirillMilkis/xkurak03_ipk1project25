@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 
 #include <algorithm>  
+#include <cmath>
 
 #include "ipManager.h"
 
@@ -31,44 +32,96 @@ bool IpManager::useNextSubnet() {
         return false;
     }
     
-    if(!this->current_subnet.empty()) { //
+    if(!this->current_subnet.empty()) { 
         return true;
     }
 
 }
 
+bool IpManager::checkSubnet(std::string subnet_mask, std::string subnet_addr) {
 
-int IpManager::printSubnetList(std::vector<std::string> subnets_to_print, int ip_len) {
+    if(!this->isValidSubnetMask(subnet_mask)) {
+        std::cerr << "Invalid subnet mask" << std::endl;
+        return false;
+    }
+
+    if(!(this->is_ipv6 ? this->isValidIPv6(subnet_addr) : this->isValidIPv4(subnet_addr))) {
+        std::cerr << "Invalid IP address" << std::endl;
+        return false;
+    }
+    
+
+
+    return true;
+}
+
+bool IpManager::printSubnetList(std::vector<std::string> subnets_to_print, int ip_len) {
     
     int del_place;
     int ip_count;
 
     for(std::string subnet : subnets_to_print){
         del_place = subnet.find("/");
-        ip_count = (del_place == std::string::npos) ? 1 
-                      : ((1 << (ip_len - std::stoi(subnet.substr(del_place + 1)))) - 2);
-        std::cout << subnet << " " << ip_count << std::endl;
+
+        std::string subnet_mask = (del_place == std::string::npos) ? std::to_string(this->is_ipv6 ? 128 : 32) : this->current_subnet.substr(del_place + 1);
+        std::string subnet_addr = (del_place == std::string::npos) ? this->current_subnet : this->current_subnet.substr(0, del_place);
+
+        std::cout << subnet_addr << " " << subnet_mask << std::endl; //
+        if(!this->checkSubnet(subnet_mask, subnet_addr)) return false; 
+        
+        ip_count = (std::stoi(subnet_mask) == 32 || std::stoi(subnet_mask) == 128) ? 1 
+                      : (static_cast<int>(std::pow(2, ip_len - std::stoi(subnet_mask))) - 2);
+        std::cout << subnet_addr << " " << ip_count << std::endl;
     }
 
-    return 0;
+    return true;
 }
 
 #define IPV4_LEN 32
 #define IPV6_LEN 128
 
-int IpManager::printAllSubnets(){
+void IpManager::printAllSubnets(){
 
     std::cout << "Scanning ranges: " << std::endl;
 
-    this->printSubnetList(this->ipv4_subnets, IPV4_LEN);
+    if(!this->printSubnetList(this->ipv4_subnets, IPV4_LEN)) exit(EXIT_FAILURE);
     
-    this->printSubnetList(this->ipv6_subnets, IPV6_LEN);
-
-    return 0;
+    if(!this->printSubnetList(this->ipv6_subnets, IPV6_LEN)) exit(EXIT_FAILURE);
 
 }
 
-#define DEFAULT_SUBNET_MASK "32"
+bool IpManager::isValidSubnetMask(const std::string& subnet_mask) {
+    std::regex mask_regex(R"(^\d{1,3}$)"); // Number from 0 to 128
+    if (!std::regex_match(subnet_mask, mask_regex)) {
+        return false;
+    }
+
+    int mask = std::stoi(subnet_mask);
+
+    if(this->is_ipv6) {
+        return mask >= 0 && mask <= 128;
+    } else {
+        return mask >= 0 && mask <= 32;
+    }
+}
+
+bool IpManager::isValidIPv4(const std::string& ip) {
+    std::regex ipv4_regex(R"(^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$)");
+    std::smatch match;
+    if (!std::regex_match(ip, match, ipv4_regex)) {
+        return false;
+    }
+    for (int i = 1; i <= 4; ++i) {
+        int num = std::stoi(match[i].str());
+        if (num < 0 || num > 255) return false;
+    }
+    return true;
+}
+
+bool IpManager::isValidIPv6(const std::string& ip) {
+    std::regex ipv6_regex(R"(^([a-fA-F0-9:]+)$)");
+    return std::regex_match(ip, ipv6_regex);
+}
 
 template <typename T, size_t N>
 bool IpManager::calculateIp(std::array<T, N>& current_ip, std::array<T, N>& network_ip, std::array<T, N>& current_mask, int ip_size) {
@@ -116,8 +169,6 @@ bool IpManager::calculateIp(std::array<T, N>& current_ip, std::array<T, N>& netw
 
     return true;
 }
-
-
 
 unsigned char* IpManager::getNextIp() {
 

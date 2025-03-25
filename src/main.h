@@ -30,6 +30,11 @@
 
 #include "transportHandler.h"
 
+std::map<uint8_t, std::pair<uint8_t, uint8_t>> protocol_rules = {
+    {AF_INET, {1, 2}},
+    {AF_INET6, {3, 4}},
+};
+
 // https://cfengine.com/blog/2021/optional-arguments-with-getopt-long/
 #define OPTIONAL_ARGUMENT_IS_PRESENT \
     ((optarg == NULL && optind < argc && argv[optind][0] != '-') \
