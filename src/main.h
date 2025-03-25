@@ -48,6 +48,22 @@ typedef struct eth_hdr{
     unsigned short type;
 } ETH_HDR;
 
+static struct option long_options[] = {
+    {"interface", optional_argument, NULL, 'i'},
+    {"wait", optional_argument, NULL, 'w'},
+    {"subnet", optional_argument, NULL, 's'},
+    {"help", no_argument, NULL, 'h'},
+    {0, 0, 0, 0}
+};
+
+typedef struct options{
+    std::string interface;
+    long int timeout;
+    std::vector<std::string> subnet;
+
+} Options;
+
+
 
 
 #endif // MAIN_H

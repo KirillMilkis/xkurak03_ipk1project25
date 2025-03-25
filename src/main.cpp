@@ -1,70 +1,28 @@
 
 #include "main.h"
 
-
+/**
+ * @brief Function that handle different interrupt signals like Ctrl + C
+ * 
+ * @param signum 
+ * 
+ * @return void
+ */
 void interrupt_sniffer(int signum){
-    // Function that handle different interrupt signals like Ctrl + C
+    (void)signum;
     printf("Interrupt signal received. Exiting...\n");
-    // pcap_breakloop(pcap_descriptor);
-    // pcap_close(pcap_descriptor);
     exit(EXIT_SUCCESS);
 }
 
-
-static struct option long_options[] = {
-    {"interface", optional_argument, NULL, 'i'},
-    {"wait", optional_argument, NULL, 'w'},
-    {"subnet", optional_argument, NULL, 's'},
-    {"help", no_argument, NULL, 'h'},
-    {0, 0, 0, 0}
-};
-
-// using namespace std;
-
-typedef struct options{
-    std::string interface;
-    long int timeout;
-    std::vector<std::string> subnet;
-
-} Options;
-
-
-pcap_if_t* get_interrfaces() {
-    pcap_if_t *allinfs;
-    char errbuf[PCAP_ERRBUF_SIZE];
-
-    if(pcap_findalldevs(&allinfs, errbuf) == -1) {
-        fprintf(stderr, "Error in pcap_findalldevs: %s\n", errbuf);
-        exit(EXIT_FAILURE);
-
-    }
-    return allinfs;
-}
-
-int print_active_interfaces() {
-    pcap_if_t *alldevsp;
-
-    alldevsp = get_interrfaces();
-
-     while(alldevsp != NULL) {
-        std::cout << alldevsp->name << std::endl;
-
-        if(alldevsp->description != NULL) {
-            std::cout << alldevsp->description << std::endl;
-        } else{
-            std::cout << "No description available" << std::endl;
-        }
-
-        alldevsp = alldevsp->next;
-
-    }
-    
-    pcap_freealldevs(alldevsp);
-
-    return 0;
-}
-
-
+/**
+ * @brief Function that parse arguments from command line
+ * 
+ * @param opts
+ * @param argc
+ * @param argv
+ * 
+ * @return void
+ */
 void parse_arguments(Options* opts, int argc, char *argv[]){
 
     int opt;
@@ -116,7 +74,7 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
     }
 
     if(opts->interface.empty()) {
-        print_active_interfaces();
+        NetworkUtils::print_active_interfaces();
         fprintf(stderr, "No interface specified\n");
         exit(EXIT_FAILURE);
     }
@@ -128,11 +86,19 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
 
 }
 
-
+/**
+ * @brief Function that process ARP and NDP request
+ * 
+ * @param target_ip_char
+ * @param arpHandler
+ * @param timeout_ms
+ * 
+ * @return bool
+ */
 bool process_ar(const unsigned char* target_ip_char, TransportHandler* arpHandler, long timeout_ms) {
 
     if (arpHandler->SendRequest(target_ip_char, nullptr) == SUCCESS_SENDED) {
-        if(arpHandler->ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
+        if(arpHandler->ListenToResponce(timeout_ms) == SUCCESS_RECEIVED) {
 
            return true;
         }
@@ -141,7 +107,7 @@ bool process_ar(const unsigned char* target_ip_char, TransportHandler* arpHandle
     return false;
 }
 
-bool process_icmp(const unsigned char* target_ip_char, std::string target_ip_string, std::string target_mac_string, TransportHandler& icmpHandler, long timeout_ms) {
+bool process_icmp(const unsigned char* target_ip_char, std::string target_mac_string, TransportHandler& icmpHandler, long timeout_ms) {
 
     unsigned char target_mac_char[6];
     if(!NetworkUtils::macStringToBytes(target_mac_string, target_mac_char)){
@@ -149,7 +115,7 @@ bool process_icmp(const unsigned char* target_ip_char, std::string target_ip_str
     }
 
     if (icmpHandler.SendRequest(target_ip_char, target_mac_char) == SUCCESS_SENDED){
-        if (icmpHandler.ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
+        if (icmpHandler.ListenToResponce(timeout_ms) == SUCCESS_RECEIVED) {
            return true;
         } 
     }   
@@ -179,7 +145,7 @@ int scan_adresses(int ip_type, std::map<std::string, std::string>& ip_mac_map, s
         std::string target_mac_string = ip_mac_map[target_ip_string];
         
         if (target_mac_string != "not found"){
-            ip_icmp_reply_map[target_ip_string] = process_icmp(target_ip_char, target_ip_string, target_mac_string, transportHandlerIcmp, opts.timeout);
+            ip_icmp_reply_map[target_ip_string] = process_icmp(target_ip_char, target_mac_string, transportHandlerIcmp, opts.timeout);
         
         } else {
             ip_icmp_reply_map[target_ip_string] = false;
@@ -257,10 +223,7 @@ int print_results(std::map<std::string, std::string>& ip_mac_map, std::map<std::
 
 int main(int argc, char *argv[]) {
 
-    char errbuf[LIBNET_ERRBUF_SIZE];
-
     Options opts;
-    int opt;
 
     parse_arguments(&opts, argc, argv);
 
@@ -276,7 +239,7 @@ int main(int argc, char *argv[]) {
     printf("Interface: %s\n", opts.interface.c_str());  
 
     IpManager ipManager(opts.subnet);
-    
+
     ipManager.printAllSubnets();
 
 

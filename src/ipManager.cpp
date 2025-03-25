@@ -21,7 +21,7 @@ bool IpManager::useNextSubnet() {
     
     this->subnet_num += 1;
 
-    if(this->subnet_num < this->ipv4_subnets.size()) {
+    if(this->subnet_num < (int)this->ipv4_subnets.size()) {
         this->current_subnet = this->ipv4_subnets[this->subnet_num];
         this->is_first_ip = true;
     } else if((this->subnet_num - this->ipv4_subnets.size()) < this->ipv6_subnets.size()) {
@@ -35,6 +35,8 @@ bool IpManager::useNextSubnet() {
     if(!this->current_subnet.empty()) { 
         return true;
     }
+
+    return false;
 
 }
 
@@ -55,7 +57,7 @@ bool IpManager::checkSubnet(std::string subnet_mask, std::string subnet_addr) {
     return true;
 }
 
-bool IpManager::printSubnetList(std::vector<std::string> subnets_to_print, int ip_len) {
+bool IpManager::printSubnetList(std::vector<std::string> subnets_to_print, int ip_len) { //
     
     int del_place;
     int ip_count;
@@ -63,8 +65,8 @@ bool IpManager::printSubnetList(std::vector<std::string> subnets_to_print, int i
     for(std::string subnet : subnets_to_print){
         del_place = subnet.find("/");
 
-        std::string subnet_mask = (del_place == std::string::npos) ? std::to_string(this->is_ipv6 ? 128 : 32) : this->current_subnet.substr(del_place + 1);
-        std::string subnet_addr = (del_place == std::string::npos) ? this->current_subnet : this->current_subnet.substr(0, del_place);
+        std::string subnet_mask = (del_place ==  static_cast<int>(std::string::npos)) ? std::to_string(this->is_ipv6 ? 128 : 32) : this->current_subnet.substr(del_place + 1);
+        std::string subnet_addr = (del_place ==  static_cast<int>(std::string::npos)) ? this->current_subnet : this->current_subnet.substr(0, del_place);
 
         std::cout << subnet_addr << " " << subnet_mask << std::endl; //
         if(!this->checkSubnet(subnet_mask, subnet_addr)) return false; 
@@ -127,11 +129,11 @@ template <typename T, size_t N>
 bool IpManager::calculateIp(std::array<T, N>& current_ip, std::array<T, N>& network_ip, std::array<T, N>& current_mask, int ip_size) {
     if(this->is_first_ip){
         int del_place = this->current_subnet.find("/"); //
-        std::string subnet_mask = (del_place == std::string::npos) ? std::to_string(ip_size) : this->current_subnet.substr(del_place + 1);
-        std::string subnet_addr = (del_place == std::string::npos) ? this->current_subnet : this->current_subnet.substr(0, del_place);
+        std::string subnet_mask = (del_place ==  static_cast<int>(std::string::npos)) ? std::to_string(ip_size) : this->current_subnet.substr(del_place + 1);
+        std::string subnet_addr = (del_place ==  static_cast<int>(std::string::npos)) ? this->current_subnet : this->current_subnet.substr(0, del_place);
 
         int maskBits = std::stoi(subnet_mask);
-        for (int i = 0; i < N; i++) {
+        for (int i = 0; i < (int)N; i++) {
             if (maskBits >= 8) {
                 current_mask[i] = 0xFF;  
                 maskBits -= 8;

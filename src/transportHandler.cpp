@@ -12,21 +12,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#define SUCCESS_SENDED 3
-#define ETHER_HDR_LEN 14
-#define ARP_HDR_LEN 28
-#define IP4_HDR_LEN 20
-#define ICMP_HDR_LEN 8
-#define ICMP6_HDR_LEN 8
-#define IP6_HDR_LEN 40
-
-#define ARP 1
-#define ICMP 2
-#define ICMPv6 4
-#define NDP 3
-
-
-#include "headerBuilder.cpp"
 
 int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned char* dst_mac) {
     // Function to send     ARP packets
@@ -44,7 +29,7 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
    
     struct sockaddr_ll sa;
 
-    int buffer_size;
+    int buffer_size = 0;
 
     // Get the index of the network device //
 
@@ -92,9 +77,9 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
         }
         case ICMPv6: {
          
-            headerBuilder.buildETH(3, ipaddr, dst_mac, this->ifr);
-            headerBuilder.buildIP6(3, ipaddr, dst_mac, this->ifr);
-            headerBuilder.buildICMP6(3, ipaddr, dst_mac, this->ifr);
+            headerBuilder.buildETH(4, ipaddr, dst_mac, this->ifr);
+            headerBuilder.buildIP6(4, ipaddr, dst_mac, this->ifr);
+            headerBuilder.buildICMP6(4, ipaddr, dst_mac, this->ifr);
 
             memcpy(buffer, headerBuilder.getETHHeader(), ETHER_HDR_LEN);
             memcpy(buffer + ETHER_HDR_LEN, headerBuilder.getIP6Header(), IP6_HDR_LEN);
@@ -308,7 +293,7 @@ bool TransportHandler::testNDPResponse(const unsigned char* buffer) {
 
 
 
-int TransportHandler::ListenToResponce(const unsigned char* target_ip, long int timeout_ms) {
+int TransportHandler::ListenToResponce(long int timeout_ms) {
 
     while(1){
         memset(buffer, 0, BUFSIZE);
@@ -360,10 +345,6 @@ int TransportHandler::ListenToResponce(const unsigned char* target_ip, long int 
 }
 
 std::string TransportHandler::GetDestMAC() {
-
-    if (this->dst_mac == NULL) {
-        return "not found";
-    }
 
     return NetworkUtils::macToString(this->dst_mac);
 }

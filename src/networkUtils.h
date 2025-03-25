@@ -7,6 +7,26 @@
 
 #include <unistd.h>  
 
+#define ARP 1
+#define ICMP 2
+#define ICMPv6 4
+#define NDP 3
+
+
+#define BUFSIZE 100
+// #define ETHER_HDR_LEN 14
+#define ARP_HDR_LEN 28
+#define IP4_HDR_LEN 20
+#define ICMP_HDR_LEN 8
+#define ICMP6_HDR_LEN 32
+#define IP6_HDR_LEN 40
+
+// #define IP4_HDR_LEN 20
+// #define ICMP_HDR_LEN 8
+// #define ARP_HDR_LEN 28
+// #define ICMP6_HDR_LEN 32 
+// #define IP6_HDR_LEN 40
+
 class NetworkUtils {
     private:
         static unsigned char* ip_addrv4;
@@ -23,6 +43,10 @@ class NetworkUtils {
     static std::string ipToString(const unsigned char* ip, int family);
 
     static bool macStringToBytes(const std::string& macStr, unsigned char macBytes[6]);
+
+    static pcap_if_t* get_interfaces();
+
+    int print_active_interfaces();
 
 };
 

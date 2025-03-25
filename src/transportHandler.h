@@ -1,13 +1,6 @@
 #ifndef TRANSPORTHANDLER_H
 #define TRANSPORTHANDLER_H
 
-
-#define BUFSIZE 100
-#define ETH_FRAME_LEN 1518
-#define ARP_HDR_LEN 28
-#define IP4_HDR_LEN 20
-#define ETHER_HDR_LEN 14
-
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
@@ -16,11 +9,12 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 
+#include "headerBuilder.h"
 
-#define ARP 1
-#define ICMP 2
-#define ICMPv6 3
-#define NDP 4
+// #define BUFSIZE 100
+// #define ETH_FRAME_LEN 1518
+
+#define SUCCESS_SENDED 3
 
 #define SUCCESS_RECEIVED 4
 
@@ -45,7 +39,6 @@ class TransportHandler {
     public:
 
         TransportHandler(const std::string& iface, int protocol) : iface(iface), protocol(protocol) {
-            // socketController = SocketController();
 
             memset(this->ifr.ifr_name, 0, IFNAMSIZ);
 
@@ -68,7 +61,7 @@ class TransportHandler {
 
         int SendRequest(const unsigned char* ipaddr, const unsigned char* dst_mac);
 
-        int ListenToResponce(const unsigned char* target_ip, long int timeout_ms);
+        int ListenToResponce(long int timeout_ms);
 
         bool testArpResponse(const unsigned char* buffer);
 

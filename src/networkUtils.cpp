@@ -2,6 +2,7 @@
 #include "networkUtils.h"
 #include <cstring>
 #include <vector>
+#include <pcap.h>
 
 #include <ifaddrs.h>
 
@@ -154,4 +155,39 @@ bool NetworkUtils::macStringToBytes(const std::string& macStr, unsigned char* ma
     }
 
     return true;
+}
+
+pcap_if_t* NetworkUtils::get_interfaces() {
+    pcap_if_t *allinfs;
+    char errbuf[PCAP_ERRBUF_SIZE];
+
+    if(pcap_findalldevs(&allinfs, errbuf) == -1) {
+        fprintf(stderr, "Error in pcap_findalldevs: %s\n", errbuf);
+        exit(EXIT_FAILURE);
+
+    }
+    return allinfs;
+}
+
+int NetworkUtils::print_active_interfaces() {
+    pcap_if_t *alldevsp;
+    alldevsp = NetworkUtils::get_interfaces();
+    alldevsp = NetworkUtils::get_interrfaces();
+
+     while(alldevsp != NULL) {
+        std::cout << alldevsp->name << std::endl;
+
+        if(alldevsp->description != NULL) {
+            std::cout << alldevsp->description << std::endl;
+        } else{
+            std::cout << "No description available" << std::endl;
+        }
+
+        alldevsp = alldevsp->next;
+
+    }
+    
+    pcap_freealldevs(alldevsp);
+
+    return 0;
 }
