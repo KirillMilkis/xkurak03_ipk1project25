@@ -5,6 +5,9 @@
 #include <vector>
 #include <string>
 #include <array>
+#include <cstdint>
+#include <iostream>
+#include <ostream>
 
 #define INET6_ADDRSTRLEN 46
 

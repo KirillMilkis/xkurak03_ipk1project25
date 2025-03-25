@@ -1,25 +1,5 @@
-#define no_argument 0
-#define required_argument 1
-#define optional_argument 2
-
-#include <getopt.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <string>
-
-#include <iostream>
-#include <libnet.h>
-#include <pcap.h>
-#include <thread>
-#include <future>
-#include <chrono>
-#include <atomic>
 
 #include "main.h"
-#include "transportHandler.h"
-
-#include <vector>
 
 
 void interrupt_sniffer(int signum){
@@ -32,10 +12,10 @@ void interrupt_sniffer(int signum){
 
 
 static struct option long_options[] = {
-    {"interface", required_argument, NULL, 'i'},
+    {"interface", optional_argument, NULL, 'i'},
     {"port", optional_argument, NULL, 'p'},
     {"wait", optional_argument, NULL, 'w'},
-    {"subnet", required_argument, NULL, 's'},
+    {"subnet", optional_argument, NULL, 's'},
     {0, 0, 0, 0}
 };
 
@@ -89,27 +69,33 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
 
     int opt;
 
-    while((opt = getopt_long(argc, argv, ":iws", long_options, NULL)) != -1) {
+    opts->timeout = 5000;
+
+    while((opt = getopt_long(argc, argv, "i::w::s::", long_options, NULL)) != -1) {
         switch(opt) {
             case 'i':
-                if (argv[optind] != NULL && argv[optind][0] != '-') {
-                    printf("Interface: %s\n", argv[optind]);
-                    opts->interface = argv[optind];
-                } else{
-                    printf("No interface specified\n");
-                    print_active_interfaces();
+                if (optarg == NULL && optind < argc
+                    && argv[optind][0] != '-'){
+                    opts->interface = argv[optind++];
+                } else if(optarg != NULL){
+                    printf("Interface: %s\n", optarg);
+                    opts->interface = optarg;
                 }
                 break;
             case 'w':
-                if (argv[optind] != NULL && argv[optind][0] != '-') {
-                    opts->timeout = atoi(argv[optind]);
-                } else {
-                    opts->timeout = 5000;
-                }
+                if (optarg == NULL && optind < argc
+                    && argv[optind][0] != '-'){
+                    opts->timeout = atoi(argv[optind++]);
+                } else if(optarg != NULL){
+                    opts->timeout = atoi(optarg);
+                } 
                 break;
             case 's':
-                if(argv[optind] != NULL && argv[optind][0] != '-') {
-                    opts->subnet.push_back(argv[optind]);
+                if (optarg == NULL && optind < argc
+                    && argv[optind][0] != '-'){
+                    opts->subnet.push_back(argv[optind++]);
+                } else if(optarg != NULL){
+                    opts->subnet.push_back(optarg);
                 }
                 break;
             case '?':
@@ -121,15 +107,18 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
         }
     }
 
+    if(opts->subnet.empty()) {
+        fprintf(stderr, "No subnet specified\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if(opts->interface.empty()) {
+        print_active_interfaces();
+        fprintf(stderr, "No interface specified\n");
+        exit(EXIT_FAILURE);
+    }
 
 }
-
-#define SUCCESS_SENDED 3
-
-std::map<std::string, std::string> ip_mac_map;
-std::map<std::string, std::string> ip_mac_map_v6;
-std::map<std::string, bool> ip_icmp_reply_map;
-std::map<std::string, bool> ip_icmp_reply_map_v6;
 
 std::map<uint8_t, std::pair<uint8_t, uint8_t>> protocol_rules = {
     {AF_INET, {1, 2}},
@@ -154,10 +143,10 @@ bool process_ar(const unsigned char* target_ip_char, TransportHandler* arpHandle
     return false;
 }
 
-bool process_icmp(const unsigned char* target_ip_char, std::string target_ip_string, TransportHandler& icmpHandler, long timeout_ms) {
+bool process_icmp(const unsigned char* target_ip_char, std::string target_ip_string, std::string target_mac_string, TransportHandler& icmpHandler, long timeout_ms) {
 
     unsigned char target_mac_char[6];
-    if(!NetworkUtils::macStringToBytes(ip_mac_map[target_ip_string], target_mac_char)){
+    if(!NetworkUtils::macStringToBytes(target_mac_string, target_mac_char)){
         return false;
     }
 
@@ -180,8 +169,6 @@ int scan_adresses(int ip_type, std::map<std::string, std::string>& ip_mac_map, s
         
         std::string target_ip_string = NetworkUtils::ipToString(target_ip_char, ip_type);
 
-        std::cout << "Scanning: " << target_ip_string << std::endl;
-
         if (process_ar(target_ip_char, &transportHandlerAdrrRes, opts.timeout)){
             ip_mac_map[target_ip_string] =  transportHandlerAdrrRes.GetDestMAC();   
 
@@ -190,9 +177,11 @@ int scan_adresses(int ip_type, std::map<std::string, std::string>& ip_mac_map, s
         }
 
         TransportHandler transportHandlerIcmp(opts.interface, protocol_rules[ip_type].second);
+
+        std::string target_mac_string = ip_mac_map[target_ip_string];
         
-        if (ip_mac_map[target_ip_string] != "not found"){
-            ip_icmp_reply_map[target_ip_string] = process_icmp(target_ip_char, target_ip_string, transportHandlerIcmp, opts.timeout);
+        if (target_mac_string != "not found"){
+            ip_icmp_reply_map[target_ip_string] = process_icmp(target_ip_char, target_ip_string, target_mac_string, transportHandlerIcmp, opts.timeout);
         
         } else {
             ip_icmp_reply_map[target_ip_string] = false;
@@ -211,7 +200,6 @@ std::queue<std::function<void()>> tasks;
 size_t max_threads = 50;
 size_t active_threads = 0;
 std::atomic<bool> stop_threads(false);
-
 
 void thread_worker() {
     while (true) {
@@ -282,6 +270,11 @@ int main(int argc, char *argv[]) {
     signal(SIGQUIT, interrupt_sniffer);
     signal(SIGTERM, interrupt_sniffer);
 
+    std::map<std::string, std::string> ip_mac_map;
+    std::map<std::string, std::string> ip_mac_map_v6;
+    std::map<std::string, bool> ip_icmp_reply_map;
+    std::map<std::string, bool> ip_icmp_reply_map_v6;
+
     if(opts.interface.empty()) {
         print_active_interfaces();
     }
@@ -306,7 +299,6 @@ int main(int argc, char *argv[]) {
            
             tasks.push([&, current_ip_copy = std::move(current_ip)]() {
                 if(IpManager::isIPv6(ipManager.getCurrentIpString())) {
-
                     scan_adresses(AF_INET6, ip_mac_map_v6, ip_icmp_reply_map_v6, current_ip_copy, opts);
                 } else {
                     scan_adresses(AF_INET, ip_mac_map, ip_icmp_reply_map, current_ip_copy, opts);
@@ -343,52 +335,6 @@ int main(int argc, char *argv[]) {
     
     print_results(ip_mac_map, ip_icmp_reply_map);
     print_results(ip_mac_map_v6, ip_icmp_reply_map_v6);
-
-    // for (auto& [ip, mac] : ip_mac_map) {
-    //     unsigned char mac_c[6];
-        
-    //     printf("%s arp ", ip.c_str());
-        
-    //     if(mac != "not found"){
-    //         sscanf(mac.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &mac_c[0], &mac_c[1], &mac_c[2], &mac_c[3], &mac_c[4], &mac_c[5]);
-    //         printf("(%02x-%02x-%02x-%02x-%02x-%02x)", mac_c[0], mac_c[1], mac_c[2], mac_c[3], mac_c[4], mac_c[5]);
-    //     } else {
-    //         printf("FAIL");
-    //     }
-        
-    //     printf(", ");
-
-    //     if(ip_icmp_reply_map[ip]){
-    //         printf("icmp OK\n");
-    //     } else {
-    //         printf("icmp FAIL\n");
-    //     }
-
-    // }
-
-    // for (auto& [ip, mac] : ip_mac_map_v6) {
-    //     unsigned char mac_c[6];
-        
-    //     printf("%s arp ", ip.c_str());
-        
-    //     if(mac != "not found"){
-    //         sscanf(mac.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &mac_c[0], &mac_c[1], &mac_c[2], &mac_c[3], &mac_c[4], &mac_c[5]);
-    //         printf("(%02x-%02x-%02x-%02x-%02x-%02x)", mac_c[0], mac_c[1], mac_c[2], mac_c[3], mac_c[4], mac_c[5]);
-    //     } else {
-    //         printf("FAIL");
-    //     }
-        
-    //     printf(", ");
-
-    //     if(ip_icmp_reply_map_v6[ip]){
-    //         printf("icmp OK\n");
-    //     } else {
-    //         printf("icmp FAIL\n");
-    //     }
-
-    // }
-
-
 
     return 0;
 }

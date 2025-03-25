@@ -81,8 +81,6 @@ class HeaderBuilder {
           
                 memset(&this->eth_hdr, 0, sizeof(this->eth_hdr));
 
-              
-
                 switch(protocol){
                     case ARP:
                         this->eth_hdr.h_proto = htons(ETH_P_ARP);
@@ -123,8 +121,7 @@ class HeaderBuilder {
                 return &this->eth_hdr;
             }
 
-    
-  
+
             void buildARP(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
                 // std::cout << "Building ARP Header" << std::endl;
                 memset(&this->arp_hdr, 0, sizeof(this->arp_hdr));
@@ -146,12 +143,12 @@ class HeaderBuilder {
             }
 
             const struct arphdr* getARPHeader() {
-                return reinterpret_cast<const struct arphdr*>(&this->arp_hdr); // Приведение типа
+                return reinterpret_cast<const struct arphdr*>(&this->arp_hdr); 
             }
 
  
             void buildIP(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
-            // std::cout << "Building IP Header" << std::endl;
+        
             this->ip_hdr.ihl = 5;
             this->ip_hdr.version = 4;
             this->ip_hdr.tos = 0;

@@ -21,7 +21,6 @@ bool IpManager::useNextSubnet() {
     this->subnet_num += 1;
 
     if(this->subnet_num < this->ipv4_subnets.size()) {
-        std::cout << "Subnet num: " << this->subnet_num << std::endl;
         this->current_subnet = this->ipv4_subnets[this->subnet_num];
         this->is_first_ip = true;
     } else if((this->subnet_num - this->ipv4_subnets.size()) < this->ipv6_subnets.size()) {
@@ -45,7 +44,6 @@ int IpManager::printSubnetList(std::vector<std::string> subnets_to_print, int ip
     int ip_count;
 
     for(std::string subnet : subnets_to_print){
-        std::cout << "Scanning subnet: " << subnet << std::endl;
         del_place = subnet.find("/");
         ip_count = (del_place == std::string::npos) ? 1 
                       : ((1 << (ip_len - std::stoi(subnet.substr(del_place + 1)))) - 2);
@@ -78,9 +76,7 @@ bool IpManager::calculateIp(std::array<T, N>& current_ip, std::array<T, N>& netw
         int del_place = this->current_subnet.find("/"); //
         std::string subnet_mask = (del_place == std::string::npos) ? std::to_string(ip_size) : this->current_subnet.substr(del_place + 1);
         std::string subnet_addr = (del_place == std::string::npos) ? this->current_subnet : this->current_subnet.substr(0, del_place);
-        
-        std::cout << "Subnet mask: " << subnet_mask << std::endl;
-        std::cout << "Subnet addr: " << subnet_addr << std::endl;
+
         int maskBits = std::stoi(subnet_mask);
         for (int i = 0; i < N; i++) {
             if (maskBits >= 8) {
@@ -196,10 +192,6 @@ std::array<unsigned char, N> IpManager::stringToBytes(const std::string& ip) {
         inet_pton(AF_INET, ip.c_str(), result.data());   
     }
 
-    for(int i = 0; i < N; i++) {
-        std::cout << (int)result[i] << std::endl;
-    }
-
     return result;
 }
 
@@ -221,7 +213,6 @@ std::vector<unsigned char> IpManager::bytesToChar(std::array<T, N> ip, size_t si
         exit(1);
     }
 
-   
     std::vector<unsigned char> buffer(temp_buffer, temp_buffer + size);
     return buffer;
 }
