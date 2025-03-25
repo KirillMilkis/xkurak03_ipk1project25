@@ -3,8 +3,19 @@
 
 #include "headerBuilder.h" // Used for HeaderBuilder class
 
+/**
+ * @brief Construct a new Ethernet header
+ * 
+ * @param protocol Protocol
+ * @param dst_ip Destination IP address
+ * @param dst_mac Destination MAC address
+ * @param ifr Interface request structure
+ * 
+ * @return void
+ */
 void HeaderBuilder::buildETH(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
 
+    // Ignore unused parameters
     (void)protocol;
     (void)dst_mac;
     (void)dst_ip;
@@ -32,7 +43,7 @@ void HeaderBuilder::buildETH(int protocol, const unsigned char* dst_ip, const un
             memcpy(this->eth_hdr.h_dest, broadcast_mac, 6); 
             break;
         case NDP:
-            memcpy(this->eth_hdr.h_dest, "\x33\x33\xff\x00\x00\x01", 6); // IPv6 multicast для NS
+            memcpy(this->eth_hdr.h_dest, "\x33\x33\xff\x00\x00\x01", 6);
             break;
         case ICMP:
         case ICMPv6:
@@ -48,11 +59,25 @@ void HeaderBuilder::buildETH(int protocol, const unsigned char* dst_ip, const un
 
 }
 
+/**
+ * @brief Get Ethernet header
+ * 
+ * @return const struct ethhdr* 
+ */
 const struct ethhdr* HeaderBuilder::getETHHeader() {
     return &this->eth_hdr;
 }
 
-
+/**
+ * @brief Construct a new ARP header
+ * 
+ * @param protocol Protocol
+ * @param dst_ip Destination IP address
+ * @param dst_mac Destination MAC address
+ * @param ifr Interface request structure
+ * 
+ * @return void
+ */
 void HeaderBuilder::buildARP(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
 
     (void)protocol;
@@ -79,11 +104,26 @@ void HeaderBuilder::buildARP(int protocol, const unsigned char* dst_ip, const un
 
 }
 
+/**
+ * @brief Get ARP header. We have to transform the struct to const struct arphdr* because in arphdr
+ * we cannot fill the ar_sha, ar_sip, ar_tha and ar_tip fields, that impotant to send this request.
+ * 
+ * @return const struct arphdr* 
+ */
 const struct arphdr* HeaderBuilder::getARPHeader() {
     return reinterpret_cast<const struct arphdr*>(&this->arp_hdr); 
 }
 
-
+/**
+ * @brief Construct a new IP header
+ * 
+ * @param protocol Protocol
+ * @param dst_ip Destination IP address
+ * @param dst_mac Destination MAC address
+ * @param ifr Interface request structure
+ * 
+ * @return void
+ */
 void HeaderBuilder::buildIP(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
 
     (void)protocol;
@@ -122,11 +162,25 @@ void HeaderBuilder::buildIP(int protocol, const unsigned char* dst_ip, const uns
 
 }
 
+/**
+ * @brief Get IP header
+ * 
+ * @return const struct iphdr*
+ */
 const struct iphdr* HeaderBuilder::getIPHeader() {
     return &this->ip_hdr;
 }
 
-
+/**
+ * @brief Construct a new ICMP header
+ * 
+ * @param protocol Protocol
+ * @param dst_ip Destination IP address
+ * @param dst_mac Destination MAC address
+ * @param ifr Interface request structure
+ * 
+ * @return void
+ */
 void HeaderBuilder::buildICMP(int protocol, const unsigned char* dst_ip,const  unsigned char* dst_mac, struct ifreq ifr) {
 
     (void)protocol;
@@ -145,12 +199,27 @@ void HeaderBuilder::buildICMP(int protocol, const unsigned char* dst_ip,const  u
 
 }
 
+/**
+ * @brief Get ICMP header
+ * 
+ * @return const struct icmp_hdr*
+ */
 const struct icmp_hdr* HeaderBuilder::getICMPHeader() {
     return &this->icmp_hdr;
 }
 
+/**
+ * @brief Construct a new IPv6 header
+ * 
+ * @param protocol Protocol
+ * @param dst_ip Destination IP address
+ * @param dst_mac Destination MAC address
+ * @param ifr Interface request structure
+ * 
+ * @return void
+ */
 void HeaderBuilder::buildIP6(int protocol, const unsigned char* dst_ip,const  unsigned char* dst_mac, struct ifreq ifr) {
-
+    // Ignore unused parameters
     (void)protocol;
     (void)dst_mac;
     (void)dst_ip;
@@ -167,13 +236,27 @@ void HeaderBuilder::buildIP6(int protocol, const unsigned char* dst_ip,const  un
     
 }
 
+/**
+ * @brief Get IPv6 header
+ * 
+ * @return const struct ip6_hdr*
+ */
 const struct ip6_hdr* HeaderBuilder::getIP6Header() {
     return &this->ip6_hdr;
 }
 
-
+/**
+ * @brief Construct a new Neighbor Solicitation header
+ * 
+ * @param protocol Protocol
+ * @param dst_ip Destination IP address
+ * @param dst_mac Destination MAC address
+ * @param ifr Interface request structure
+ * 
+ * @return void
+ */
 void HeaderBuilder::buildNS(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
-
+    // Ignore unused parameters
     (void)protocol;
     (void)dst_mac;
     (void)dst_ip;
@@ -185,11 +268,13 @@ void HeaderBuilder::buildNS(int protocol, const unsigned char* dst_ip, const uns
     this->ns.nd_ns_hdr.icmp6_cksum = 0;
     memcpy(&ns.nd_ns_target, dst_ip, 16); 
 
+    // We have to change ip6 header length to the length of the NS header
     this->ip6_hdr.ip6_plen = htons(sizeof(ns));
 
+    // NS header requeres special type of header to calculate checksum
     struct pseudo_header pseudo_header;
-    memset(&pseudo_header, 0, sizeof(pseudo_header));
 
+    memset(&pseudo_header, 0, sizeof(pseudo_header));
     memcpy(&pseudo_header.src, &this->ip6_hdr.ip6_src, sizeof(struct in6_addr));
     memcpy(&pseudo_header.dst, &this->ip6_hdr.ip6_dst, sizeof(struct in6_addr));
     pseudo_header.length = htonl(sizeof(ns));
@@ -204,12 +289,26 @@ void HeaderBuilder::buildNS(int protocol, const unsigned char* dst_ip, const uns
     ns.nd_ns_hdr.icmp6_cksum = NetworkUtils::checksum(temp_buffer, sizeof(temp_buffer));
 }
 
+/**
+ * @brief Get Neighbor Solicitation header
+ * 
+ * @return const struct nd_neighbor_solicit*
+ */
 const struct nd_neighbor_solicit* HeaderBuilder::getNSHeader() {
     return &this->ns;
 }
 
 
-
+/**
+ * @brief Construct a new ICMPv6 header
+ * 
+ * @param protocol Protocol
+ * @param dst_ip Destination IP address
+ * @param dst_mac Destination MAC address
+ * @param ifr Interface request structure
+ * 
+ * @return void
+ */
 void HeaderBuilder::buildICMP6(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
 
     (void)protocol;
@@ -225,11 +324,12 @@ void HeaderBuilder::buildICMP6(int protocol, const unsigned char* dst_ip, const 
     this->icmpv6_hdr.icmp6_dataun.icmp6_un_data16[0] = htons(getpid()); 
     this->icmpv6_hdr.icmp6_dataun.icmp6_un_data16[1] = htons(1);
 
+    // We have to change ip6 header length to the length of the NS header
     this->ip6_hdr.ip6_plen = htons(sizeof(icmpv6_hdr));
 
+    // NS header requeres special type of header to calculate checksum
     struct pseudo_header pseudo_header;
     memset(&pseudo_header, 0, sizeof(pseudo_header));
-
     memset(&pseudo_header, 0, sizeof(pseudo_header));
     memcpy(&pseudo_header.src, &this->ip6_hdr.ip6_src, sizeof(struct in6_addr));
     memcpy(&pseudo_header.dst, &this->ip6_hdr.ip6_dst, sizeof(struct in6_addr));
@@ -243,10 +343,15 @@ void HeaderBuilder::buildICMP6(int protocol, const unsigned char* dst_ip, const 
     this->icmpv6_hdr.icmp6_cksum = NetworkUtils::checksum((uint16_t*)temp_buffer, sizeof(temp_buffer));
 }
 
+/**
+ * @brief Get ICMPv6 header
+ * 
+ * @return const struct icmp6_hdr*
+ */
 const struct icmp6_hdr* HeaderBuilder::getICMP6Header() {
-    return &this->icmpv6_hdr; //
+    return &this->icmpv6_hdr; 
 }
-//
+
 
 
 

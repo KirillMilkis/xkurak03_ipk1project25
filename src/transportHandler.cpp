@@ -1,31 +1,8 @@
 
 #include "transportHandler.h"
-#include <iostream>
-#include <string>
-#include <array>
-#include <vector>
-#include <cstdio>
-#include <sys/ioctl.h>
-#include <linux/if_packet.h>
-#include <net/if.h>
-#include <cstring>
-#include <arpa/inet.h>
-#include <unistd.h>
 
 
 int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned char* dst_mac) {
-    // Function to send     ARP packets
-
-    // if(protocol == ARP || protocol == ICMP) {
-    //     memcpy(this->dst_ip, ipaddr, 4);
-    // } else if(protocol == ICMPv6 || protocol == NDP) {
-    //     memcpy(this->dst_ip6, ipaddr, 16);
-    // }
-
-    // if(dst_mac != NULL) {
-    //     memcpy(this->dst_mac, dst_mac, 6);
-    // } //
-  
    
     struct sockaddr_ll sa;
 

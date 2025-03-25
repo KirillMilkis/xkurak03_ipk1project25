@@ -11,9 +11,6 @@
 
 #include "headerBuilder.h"
 
-// #define BUFSIZE 100
-// #define ETH_FRAME_LEN 1518
-
 #define SUCCESS_SENDED 3
 
 #define SUCCESS_RECEIVED 4
