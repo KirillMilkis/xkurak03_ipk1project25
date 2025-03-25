@@ -12,10 +12,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-
-
-
-
 #include <algorithm>  
 
 #include "ipManager.h"
@@ -25,10 +21,13 @@ bool IpManager::useNextSubnet() {
     this->subnet_num += 1;
 
     if(this->subnet_num < this->ipv4_subnets.size()) {
+        std::cout << "Subnet num: " << this->subnet_num << std::endl;
         this->current_subnet = this->ipv4_subnets[this->subnet_num];
+        this->is_first_ip = true;
     } else if((this->subnet_num - this->ipv4_subnets.size()) < this->ipv6_subnets.size()) {
         this->is_ipv6 = true;
         this->current_subnet = this->ipv6_subnets[this->subnet_num - this->ipv4_subnets.size()];
+        this->is_first_ip = true;
     } else {
         return false;
     }
