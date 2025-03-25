@@ -81,6 +81,8 @@ class HeaderBuilder {
           
                 memset(&this->eth_hdr, 0, sizeof(this->eth_hdr));
 
+              
+
                 switch(protocol){
                     case ARP:
                         this->eth_hdr.h_proto = htons(ETH_P_ARP);
@@ -89,6 +91,7 @@ class HeaderBuilder {
                     case NDP:
                         this->eth_hdr.h_proto = htons(ETH_P_IPV6);
                         break;
+                    case ICMP:
                     default:
                         this->eth_hdr.h_proto = htons(ETH_P_IP);
                         break;
@@ -113,7 +116,6 @@ class HeaderBuilder {
               
 
                 memcpy(this->eth_hdr.h_source, NetworkUtils::getMAC(&ifr), 6); 
-
 
             }
 

@@ -1,6 +1,7 @@
 #include <string>
 #include "networkUtils.h"
 #include <cstring>
+#include <vector>
 
 #include <ifaddrs.h>
 
@@ -110,31 +111,6 @@ unsigned short NetworkUtils::checksum(void *b, int len) {
 }
 
 
-// uint16_t NetworkUtils::checksum(uint16_t *addr, int len) {
-//     int nleft = len;
-//     uint32_t sum = 0;
-//     uint16_t *w = addr;
-//     uint16_t answer = 0;
-
-//     while (nleft > 1) {
-//         sum += *w++;
-//         nleft -= 2;
-//     }
-
-//     if (nleft == 1) {
-//         *(unsigned char *) (&answer) = *(unsigned char *) w;
-//         sum += answer;
-//     }
-
-//     sum = (sum >> 16) + (sum & 0xffff);
-//     sum += (sum >> 16);
-//     answer = ~sum;
-//     return (answer);
-// }
-
-
-
-
 std::string NetworkUtils::macToString(unsigned char* mac){
     char mac_c[18];
     sprintf(mac_c, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
@@ -155,4 +131,27 @@ std::string NetworkUtils::ipToString(const unsigned char* ip, int family) {
     }
 
     return std::string(ip_c);
+}
+
+#include <sstream>
+
+bool NetworkUtils::macStringToBytes(const std::string& macStr, unsigned char* macBytes) {
+    std::istringstream iss(macStr);
+    std::vector<int> bytes;
+    std::string byteStr;
+
+    while (std::getline(iss, byteStr, ':')) {
+        int byte;
+        std::istringstream(byteStr) >> std::hex >> byte;
+        if (byte < 0x00 || byte > 0xFF) return false;
+        bytes.push_back(byte);
+    }
+
+    if (bytes.size() != 6) return false;
+
+    for (size_t i = 0; i < 6; i++) {
+        macBytes[i] = static_cast<unsigned char>(bytes[i]);
+    }
+
+    return true;
 }

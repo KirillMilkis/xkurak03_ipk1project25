@@ -22,6 +22,8 @@ class NetworkUtils {
     static std::string macToString(unsigned char* mac);
     static std::string ipToString(const unsigned char* ip, int family);
 
+    static bool macStringToBytes(const std::string& macStr, unsigned char macBytes[6]);
+
 };
 
 

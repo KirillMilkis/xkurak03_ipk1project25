@@ -50,7 +50,7 @@ class TransportHandler {
         unsigned char src_mac[6];  // Source MAC
         unsigned char src_ip[4];  // Source IP
 
-        unsigned char dst_mac_i[6];  // Destination MAC
+        unsigned char dst_mac[6];  // Destination MAC
         unsigned char dst_ip[4];  // Destination IP
 
         unsigned char dst_ip6[16];  // Destination IP
@@ -63,6 +63,12 @@ class TransportHandler {
             networkUtils = NetworkUtils();
 
             memset(this->ifr.ifr_name, 0, IFNAMSIZ);
+
+            memset(this->src_mac,0, 6);
+            memset(this->src_ip, 0, 4);
+            memset(this->dst_mac, 0, 6);
+            memset(this->dst_ip, 0, 4);
+
 
             iface.copy(ifr.ifr_name, IFNAMSIZ);
 

@@ -36,7 +36,10 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
         memcpy(this->dst_ip6, ipaddr, 16);
     }
 
-    // memcpy(this->dst_mac, dst_mac, 6);
+    if(dst_mac != NULL) {
+        memcpy(this->dst_mac, dst_mac, 6);
+    }
+  
    
     struct sockaddr_ll sa;
 
@@ -75,10 +78,6 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
             headerBuilder.buildETH(2, ipaddr, dst_mac, this->ifr);
             memcpy(buffer, headerBuilder.getETHHeader(), ETHER_HDR_LEN);
 
-            // for(int i = 0; i < 6; i++) {
-            //     std::cout << dst_mac[i] << std::endl;
-            // }
-
             // IPHeader ip_hdr;
             headerBuilder.buildIP(2, ipaddr, dst_mac, this->ifr);
             memcpy(buffer + ETHER_HDR_LEN, headerBuilder.getIPHeader(), IP4_HDR_LEN);
@@ -99,10 +98,6 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
             memcpy(buffer, headerBuilder.getETHHeader(), ETHER_HDR_LEN);
             memcpy(buffer + ETHER_HDR_LEN, headerBuilder.getIP6Header(), IP6_HDR_LEN);
             memcpy(buffer + ETHER_HDR_LEN + IP6_HDR_LEN, headerBuilder.getICMP6Header(), ICMP6_HDR_LEN);
-            
-            // ICMP6Header  icmp6_hdr = new ICMP6Header(this->iface);
-            // icmp6_hdr->build();
-            // memet(buffer + ETHER_HDR_LEN + IP6_HDR_LEN, icmp6_hdr->getHeader(), ICMP6_HDR_LEN);
 
             buffer_size = ETHER_HDR_LEN + IP6_HDR_LEN + ICMP6_HDR_LEN;
             break;
@@ -191,7 +186,7 @@ bool TransportHandler::testArpResponse(const unsigned char* buffer) {
         return false;
     }
 
-    memcpy(this->dst_mac_i, eth_hdr->h_source, 6);
+    memcpy(this->dst_mac, eth_hdr->h_source, 6);
 
     return true; ////
 }
@@ -266,11 +261,6 @@ bool TransportHandler::testICMPResponse(const unsigned char* buffer){
         return false;
     }
 
-    // if(memcmp(ip_hdr->daddr, NetworkUtils::getIP(this->ifr.ifr_name, AF_INET), 4) != 0 || memcmp(ip_hdr->saddr, this->dst_ip, 4) != 0) {
-    //     std::cout << "Not a response to our request6" << std::endl;
-    //     return false;
-    // }
-
     if(memcmp(eth_hdr->h_dest, NetworkUtils::getMAC(&this->ifr), 6) != 0) {
         std::cout << "Not a response to our request4" << std::endl;
         return false;
@@ -323,14 +313,14 @@ bool TransportHandler::testNDPResponse(const unsigned char* buffer) {
         return false;
     }
 
-    struct nd_opt_hdr *opt_hdr = (struct nd_opt_hdr*)(na_hdr + 8);
+    struct nd_opt_hdr *opt_hdr = (struct nd_opt_hdr*)((unsigned char*)na_hdr + sizeof(struct nd_neighbor_advert));
     if (opt_hdr->nd_opt_type == ND_OPT_TARGET_LINKADDR) {
-        unsigned char *received_mac = (unsigned char *)(opt_hdr + 2);
+        unsigned char *received_mac = (unsigned char *)(opt_hdr + 1);
         // if (memcmp(received_mac, NetworkUtils::getMAC(&this->ifr), 6) != 0) {
         //     return false;
         // }
 
-        memcpy(this->dst_mac_i, received_mac, 6);
+        memcpy(this->dst_mac, received_mac, 6);
     }
 
     return true;
@@ -362,13 +352,11 @@ int TransportHandler::ListenToResponce(const unsigned char* target_ip, long int 
             }
         }
 
-
         switch(this->protocol) {
             case ARP:
                 if (!this->testArpResponse(buffer)){
                     continue;
                 }
-            
                 break;
             case ICMP:
                 if (!this->testICMPResponse(buffer)){
@@ -395,10 +383,9 @@ int TransportHandler::ListenToResponce(const unsigned char* target_ip, long int 
 
 std::string TransportHandler::GetDestMAC() {
 
-    if (this->dst_mac_i == NULL) {
+    if (this->dst_mac == NULL) {
         return "not found";
     }
 
-    std::cout << "Getting MAC " << NetworkUtils::macToString(this->dst_mac_i) << std::endl;
-    return NetworkUtils::macToString(this->dst_mac_i);
+    return NetworkUtils::macToString(this->dst_mac);
 }
