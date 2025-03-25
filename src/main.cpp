@@ -7,14 +7,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
-#include <vector>
+
 #include <iostream>
 #include <libnet.h>
 #include <pcap.h>
 #include <thread>
+#include <future>
+#include <chrono>
+#include <atomic>
 
 #include "main.h"
 #include "transportHandler.h"
+
+#include <vector>
 
 
 void interrupt_sniffer(int signum){
@@ -126,18 +131,18 @@ std::map<std::string, std::string> ip_mac_map_v6;
 std::map<std::string, bool> ip_icmp_reply_map;
 std::map<std::string, bool> ip_icmp_reply_map_v6;
 
+std::map<uint8_t, std::pair<uint8_t, uint8_t>> protocol_rules = {
+    {AF_INET, {1, 2}},
+    {AF_INET6, {3, 4}},
+};
 
 void timer(int miliseconds){
     std::this_thread::sleep_for(std::chrono::milliseconds(miliseconds));
 
 }
 
-#include <future>
-#include <chrono>
-#include <atomic>
-#include  "icmpHandler.h"
 
-bool process_arp(const unsigned char* target_ip_char, TransportHandler* arpHandler, long timeout_ms) {
+bool process_ar(const unsigned char* target_ip_char, TransportHandler* arpHandler, long timeout_ms) {
 
     if (arpHandler->SendRequest(target_ip_char, nullptr) == SUCCESS_SENDED) {
         if(arpHandler->ListenToResponce(target_ip_char, timeout_ms) == SUCCESS_RECEIVED) {
@@ -194,13 +199,69 @@ bool process_icmp6(const unsigned char* target_ip_char, std::string target_ip_st
 
 }
 
+Options opts;
+
+
+int scan_adresses(int ip_type, std::map<std::string, std::string>& ip_mac_map, std::map<std::string, bool>& ip_icmp_reply_map, std::vector<unsigned char> current_ip, Options optsssss) {
+
+        TransportHandler transportHandlerAdrrRes(opts.interface, protocol_rules[ip_type].first);
+
+        const unsigned char* target_ip_char = current_ip.data();
+        
+        std::string target_ip_string = NetworkUtils::ipToString(target_ip_char, ip_type);
+
+        if (process_ar(target_ip_char, &transportHandlerAdrrRes, opts.timeout)){
+            ip_mac_map[target_ip_string] =  transportHandlerAdrrRes.GetDestMAC();   
+
+        } else {
+            ip_mac_map[target_ip_string] = "not found"; 
+        }
+
+        TransportHandler transportHandlerIcmp(opts.interface, protocol_rules[ip_type].second);
+        
+        if (ip_mac_map[target_ip_string] != "not found"){
+            ip_icmp_reply_map[target_ip_string] = process_icmp(target_ip_char, target_ip_string, transportHandlerIcmp, opts.timeout);
+        
+        } else {
+            ip_icmp_reply_map[target_ip_string] = false;
+        }
+
+        return 0;
+
+}
+
+
+std::mutex mtx;
+std::condition_variable cv;
+std::queue<std::function<void()>> tasks;
+size_t max_threads = 50;
+
+
+void thread_worker() {
+    while (true) {
+        std::function<void()> task;
+
+        // Блокировка для доступа к очереди
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            cv.wait(lock, [] { return !tasks.empty(); });
+
+            task = tasks.front();
+            tasks.pop();
+        }
+
+        if (task) {
+            task(); // Выполняем задачу
+        }
+    }
+}
 
 
 int main(int argc, char *argv[]) {
 
     char errbuf[LIBNET_ERRBUF_SIZE];
 
-    Options opts;
+    // Options opts;
     int opt;
 
     parse_arguments(&opts, argc, argv);
@@ -224,66 +285,80 @@ int main(int argc, char *argv[]) {
         std::vector<std::thread> threads;
 
         while (ipManager.getNextIp() !=  nullptr) {
-            
-            std::vector<unsigned char> current_ip(ipManager.getCurrentIp(), ipManager.getCurrentIp() + 16);
 
             if(IpManager::isIPv6(ipManager.getCurrentIpString())) {
 
-                threads.emplace_back([&, ip_copy = std::move(current_ip)]() {
+                std::vector<unsigned char> current_ip(ipManager.getCurrentIp(), ipManager.getCurrentIp() + 16);
 
-                    TransportHandler transportHandlerNDP(opts.interface, 3);
-    
-                    const unsigned char* target_ip_char = ip_copy.data();
-                    
-                    std::string target_ip_string = NetworkUtils::ipToString(target_ip_char, AF_INET6);
-    
-                     if (process_ndp(target_ip_char, &transportHandlerNDP, opts.timeout)){
-                        ip_mac_map_v6[target_ip_string] =  transportHandlerNDP.GetDestMAC();   
+                threads.emplace_back([&, current_ip_copy = std::move(current_ip)]() {
 
-                     } else {
-                         ip_mac_map_v6[target_ip_string] = "not found";
-                     }
-    
-                    TransportHandler transportHandlerIcmpV6(opts.interface, 4);
-                    
-                    if (ip_mac_map_v6[target_ip_string] != "not found"){
-                        ip_icmp_reply_map_v6[target_ip_string] = process_icmp6(target_ip_char, target_ip_string, transportHandlerIcmpV6, opts.timeout);
-                    
-                    } else {
-                        ip_icmp_reply_map_v6[target_ip_string] = false;
-                    }
-    
+                    scan_adresses(AF_INET6, ip_mac_map_v6, ip_icmp_reply_map_v6, current_ip_copy, opts);
+
                 });
+
+                // threads.emplace_back([&, ip_copy = std::move(current_ip)]() {
+
+                //     TransportHandler transportHandlerNDP(opts.interface, 3);
+    
+                //     const unsigned char* target_ip_char = ip_copy.data();
+                    
+                //     std::string target_ip_string = NetworkUtils::ipToString(target_ip_char, AF_INET6);
+    
+                //      if (process_ndp(target_ip_char, &transportHandlerNDP, opts.timeout)){
+                //         ip_mac_map_v6[target_ip_string] =  transportHandlerNDP.GetDestMAC();   
+
+                //      } else {
+                //          ip_mac_map_v6[target_ip_string] = "not found";
+                //      }
+    
+                //     TransportHandler transportHandlerIcmpV6(opts.interface, 4);
+                    
+                //     if (ip_mac_map_v6[target_ip_string] != "not found"){
+                //         ip_icmp_reply_map_v6[target_ip_string] = process_icmp6(target_ip_char, target_ip_string, transportHandlerIcmpV6, opts.timeout);
+                    
+                //     } else {
+                //         ip_icmp_reply_map_v6[target_ip_string] = false;
+                //     }
+    
+                // });
 
 
             } else {
 
-                threads.emplace_back([&, ip_copy = std::move(current_ip)]() {
+                std::vector<unsigned char> current_ip(ipManager.getCurrentIp(), ipManager.getCurrentIp() + 4);
 
-                    TransportHandler transportHandlerArp(opts.interface, 1);
-    
-                    const unsigned char* target_ip_char = ip_copy.data();
-                    
-                    std::string target_ip_string = NetworkUtils::ipToString(target_ip_char, AF_INET);
-    
-                    if(process_arp(target_ip_char, &transportHandlerArp, opts.timeout)){
-                        ip_mac_map[target_ip_string] = transportHandlerArp.GetDestMAC();
-                    } else {
-                        ip_mac_map[target_ip_string] = "not found";
-                    }
+                threads.emplace_back([&, current_ip_copy = std::move(current_ip)]() {
 
-                    TransportHandler transportHandlerIcmp(opts.interface, 2);
-                    
-                    if (ip_mac_map[target_ip_string] != "not found"){
-       
-                        ip_icmp_reply_map[target_ip_string] = process_icmp(target_ip_char, target_ip_string, transportHandlerIcmp, opts.timeout);
-                    
-                    } else {
-    
-                        ip_icmp_reply_map[target_ip_string] = false;
-                    }
-    
+                    scan_adresses(AF_INET, ip_mac_map, ip_icmp_reply_map, current_ip_copy, opts);
+
                 });
+
+                // threads.emplace_back([&, ip_copy = std::move(current_ip)]() {
+
+                //     TransportHandler transportHandlerArp(opts.interface, 1);
+    
+                //     const unsigned char* target_ip_char = ip_copy.data();
+                    
+                //     std::string target_ip_string = NetworkUtils::ipToString(target_ip_char, AF_INET);
+    
+                //     if(process_arp(target_ip_char, &transportHandlerArp, opts.timeout)){
+                //         ip_mac_map[target_ip_string] = transportHandlerArp.GetDestMAC();
+                //     } else {
+                //         ip_mac_map[target_ip_string] = "not found";
+                //     }
+
+                //     TransportHandler transportHandlerIcmp(opts.interface, 2);
+                    
+                //     if (ip_mac_map[target_ip_string] != "not found"){
+       
+                //         ip_icmp_reply_map[target_ip_string] = process_icmp(target_ip_char, target_ip_string, transportHandlerIcmp, opts.timeout);
+                    
+                //     } else {
+    
+                //         ip_icmp_reply_map[target_ip_string] = false;
+                //     }
+    
+                // });
 
 
             }   

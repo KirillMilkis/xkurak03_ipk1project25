@@ -13,27 +13,14 @@
 #include <cstdlib>
 #include <netinet/ip.h>
 #include "networkUtils.h"
-#include "socketController.h"
+#include <sys/ioctl.h>
+#include <net/if.h>
 
 
 #define ARP 1
 #define ICMP 2
 #define ICMPv6 3
 #define NDP 4
-
-
-// typedef struct ARP_Header {
-//     uint16_t ar_hrd;   // Hardware type (Ethernet = 1)
-//     uint16_t ar_pro;   // Protocol type (IPv4 = 0x0800)
-//     uint8_t ar_hln;    // Hardware address length (MAC = 6)
-//     uint8_t ar_pln;    // Protocol address length (IPv4 = 4)
-//     uint16_t ar_op;    // Operation (1 = request, 2 = reply)
-
-//     uint8_t ar_sha[6]; // Sender MAC address
-//     uint8_t ar_sip[4]; // Sender IP address
-//     uint8_t ar_tha[6]; // Target MAC address
-//     uint8_t ar_tip[4]; // Target IP address
-// } ARP_HDR;
 
 #define SUCCESS_RECEIVED 4
 
@@ -45,7 +32,6 @@ class TransportHandler {
         int protocol;
         struct ifreq ifr;
         NetworkUtils networkUtils;
-        SocketController socketController;
 
         unsigned char src_mac[6];  // Source MAC
         unsigned char src_ip[4];  // Source IP
@@ -60,7 +46,6 @@ class TransportHandler {
 
         TransportHandler(const std::string& iface, int protocol) : iface(iface), protocol(protocol) {
             // socketController = SocketController();
-            networkUtils = NetworkUtils();
 
             memset(this->ifr.ifr_name, 0, IFNAMSIZ);
 
@@ -69,10 +54,15 @@ class TransportHandler {
             memset(this->dst_mac, 0, 6);
             memset(this->dst_ip, 0, 4);
 
+            this->sock = -1;
 
             iface.copy(ifr.ifr_name, IFNAMSIZ);
 
             buffer = (unsigned char*)malloc(sizeof(unsigned char) * ETH_FRAME_LEN);
+            if(buffer == NULL) {
+                perror("malloc() failed");
+                exit(EXIT_FAILURE);
+            }
 
         }
 
@@ -91,8 +81,12 @@ class TransportHandler {
         std::string GetDestMAC();
 
         ~TransportHandler() {
-            close(this->sock);
-            free(buffer);
+            if(this->buffer != NULL) {
+                free(this->buffer);
+            }
+            if(this->sock > 0) {
+                close(this->sock);
+            }
         }
 
 };

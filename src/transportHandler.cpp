@@ -6,6 +6,7 @@
 #include <vector>
 #include <cstdio>
 #include <sys/ioctl.h>
+#include <linux/if_packet.h>
 #include <net/if.h>
 #include <cstring>
 #include <arpa/inet.h>
@@ -45,7 +46,7 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
 
     int buffer_size;
 
-    // Get the index of the network device
+    // Get the index of the network device //
 
     memset(&sa, 0, sizeof(struct sockaddr_ll));
     sa.sll_protocol = htons(ETH_P_ALL);
@@ -115,9 +116,6 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
             memcpy(buffer + ETHER_HDR_LEN + IP6_HDR_LEN, headerBuilder.getNSHeader(), 24);
 
             buffer_size = ETHER_HDR_LEN + IP6_HDR_LEN + 24;
-
-            // headerBuilder.createNDPPacket(buffer, &buffer_size, ipaddr, this->ifr);
-
             break;
         }
 
@@ -165,24 +163,20 @@ bool TransportHandler::testArpResponse(const unsigned char* buffer) {
     struct ethhdr* eth_hdr = (struct ethhdr*)buffer;
 
     if(ntohs(eth_hdr->h_proto) != ETH_P_ARP) {
-        // std::cout << "Not an ARP packet" << std::endl;
         return false;
     }
 
     ARP_HDR* arp_hdr = (ARP_HDR*)(buffer + ETHER_HDR_LEN);
 
     if(ntohs(arp_hdr->ar_op) != 2){
-        // std::cout << "Not an ARP reply" << std::endl;
         return false;
     }
 
     if(memcmp(arp_hdr->ar_tip, NetworkUtils::getIP(this->ifr.ifr_name, AF_INET), 4) != 0 || memcmp(arp_hdr->ar_tha, NetworkUtils::getMAC(&this->ifr), 6) != 0){
-        // std::cout << "Not a response to our request" << std::endl;
         return false;
     }
 
     if (memcmp(arp_hdr->ar_sip, this->dst_ip, 4) != 0) {
-        // std::cout << "Not a response to our request" << std::endl;
         return false;
     }
 
@@ -196,32 +190,22 @@ bool TransportHandler::testICMPv6Response(const unsigned char* buffer){
     struct ip6_hdr* ip6_hdr = (struct ip6_hdr*)(buffer + ETHER_HDR_LEN);
     struct icmp6_hdr* icmpv6_hdr = (struct icmp6_hdr*)(buffer + ETHER_HDR_LEN + sizeof(struct ip6_hdr));
 
-    std::cout << "idi nah" << std::endl;
-
     if (ntohs(eth_hdr->h_proto) != ETH_P_IPV6) {
         return false;
     }
 
-    std::cout << "idi nah2" << std::endl;
-
     if (ip6_hdr->ip6_nxt != IPPROTO_ICMPV6) {
         return false;
     }
-
-    std::cout << "idi nah3" << std::endl;
 
     if (memcmp(&ip6_hdr->ip6_dst, NetworkUtils::getIP(this->ifr.ifr_name, AF_INET6), 16) != 0 || 
         memcmp(&ip6_hdr->ip6_src, this->dst_ip6, 16) != 0) {
         return false;
     }
 
-    std::cout << "idi nah4" << std::endl;
-
     if (memcmp(eth_hdr->h_dest, NetworkUtils::getMAC(&this->ifr), 6) != 0) {
         return false;
     }
-
-    std::cout << "idi nah5" << std::endl;
 
     // if (icmpv6_hdr->id != this->icmp_hdr_id) {
     //     return false;
@@ -230,8 +214,6 @@ bool TransportHandler::testICMPv6Response(const unsigned char* buffer){
     if (icmpv6_hdr->icmp6_type != 129) { // Echo Reply
         return false;
     }
-
-    std::cout << "idi nah6" << std::endl;
 
     return true;
 
@@ -250,7 +232,7 @@ bool TransportHandler::testICMPResponse(const unsigned char* buffer){
     }
 
     if(ip_hdr->protocol != IPPROTO_ICMP) {
-        std::cout << "Not an ICMP packet2" << std::endl;
+        std::cout << "Not an ICMP packet2" << std::endl; //
         return false;
     }
 
@@ -316,10 +298,6 @@ bool TransportHandler::testNDPResponse(const unsigned char* buffer) {
     struct nd_opt_hdr *opt_hdr = (struct nd_opt_hdr*)((unsigned char*)na_hdr + sizeof(struct nd_neighbor_advert));
     if (opt_hdr->nd_opt_type == ND_OPT_TARGET_LINKADDR) {
         unsigned char *received_mac = (unsigned char *)(opt_hdr + 1);
-        // if (memcmp(received_mac, NetworkUtils::getMAC(&this->ifr), 6) != 0) {
-        //     return false;
-        // }
-
         memcpy(this->dst_mac, received_mac, 6);
     }
 
