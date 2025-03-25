@@ -1,30 +1,7 @@
 
 
-#include <iostream>
-#include <string>
-#include <array>
-#include <vector>
-#include <cstdio>
-#include <sys/ioctl.h>
-#include <cstring>
-#include <arpa/inet.h>
-#include <netinet/ip.h> // for iphdr
-#include <unistd.h>
 
-#include <netinet/ip_icmp.h>
-#include <netinet/ether.h>
-#include <netinet/if_ether.h>
-
-#include <net/if.h> // for struct ifreq
-
-#include "networkUtils.h"
-#include "headerBuilder.h"
-
-#include <netinet/ip6.h>
-// 
-#include <netinet/icmp6.h>
-
-
+#include "headerBuilder.h" // Used for HeaderBuilder class
 
 void HeaderBuilder::buildETH(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
 
@@ -78,7 +55,6 @@ const struct ethhdr* HeaderBuilder::getETHHeader() {
 
 void HeaderBuilder::buildARP(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
 
-
     (void)protocol;
     (void)dst_mac;
     (void)dst_ip;
@@ -109,7 +85,6 @@ const struct arphdr* HeaderBuilder::getARPHeader() {
 
 
 void HeaderBuilder::buildIP(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
-
 
     (void)protocol;
     (void)dst_mac;
@@ -153,7 +128,6 @@ const struct iphdr* HeaderBuilder::getIPHeader() {
 
 
 void HeaderBuilder::buildICMP(int protocol, const unsigned char* dst_ip,const  unsigned char* dst_mac, struct ifreq ifr) {
-
 
     (void)protocol;
     (void)dst_mac;
@@ -200,7 +174,6 @@ const struct ip6_hdr* HeaderBuilder::getIP6Header() {
 
 void HeaderBuilder::buildNS(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
 
-
     (void)protocol;
     (void)dst_mac;
     (void)dst_ip;
@@ -238,7 +211,6 @@ const struct nd_neighbor_solicit* HeaderBuilder::getNSHeader() {
 
 
 void HeaderBuilder::buildICMP6(int protocol, const unsigned char* dst_ip, const unsigned char* dst_mac, struct ifreq ifr) {
-
 
     (void)protocol;
     (void)dst_mac;

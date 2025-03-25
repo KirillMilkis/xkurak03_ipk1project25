@@ -16,15 +16,15 @@
 int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned char* dst_mac) {
     // Function to send     ARP packets
 
-    if(protocol == ARP || protocol == ICMP) {
-        memcpy(this->dst_ip, ipaddr, 4);
-    } else if(protocol == ICMPv6 || protocol == NDP) {
-        memcpy(this->dst_ip6, ipaddr, 16);
-    }
+    // if(protocol == ARP || protocol == ICMP) {
+    //     memcpy(this->dst_ip, ipaddr, 4);
+    // } else if(protocol == ICMPv6 || protocol == NDP) {
+    //     memcpy(this->dst_ip6, ipaddr, 16);
+    // }
 
-    if(dst_mac != NULL) {
-        memcpy(this->dst_mac, dst_mac, 6);
-    }
+    // if(dst_mac != NULL) {
+    //     memcpy(this->dst_mac, dst_mac, 6);
+    // } //
   
    
     struct sockaddr_ll sa;
@@ -37,7 +37,7 @@ int TransportHandler::SendRequest(const unsigned char* ipaddr, const unsigned ch
     sa.sll_protocol = htons(ETH_P_ALL);
 
     if ((sa.sll_ifindex = if_nametoindex(this->ifr.ifr_name)) == 0) {
-        perror ("if_nametoindex() failed to obtain interface index");
+        perror ("if_nametoindex() failed to obtain interface index"); // // // //
         exit(EXIT_FAILURE);
     }
 
@@ -167,7 +167,7 @@ bool TransportHandler::testArpResponse(const unsigned char* buffer) {
 
     memcpy(this->dst_mac, eth_hdr->h_source, 6);
 
-    return true; ////
+    return true; 
 }
 
 bool TransportHandler::testICMPv6Response(const unsigned char* buffer){
@@ -262,17 +262,15 @@ bool TransportHandler::testNDPResponse(const unsigned char* buffer) {
         return false;
     }
 
-    struct in6_addr my_ipv6;
-    memcpy(&my_ipv6, NetworkUtils::getIP(this->ifr.ifr_name, AF_INET6), 16);
-    if (memcmp(&ip6_hdr->ip6_dst, &my_ipv6, 16) != 0) {
+    // struct in6_addr my_ipv6;
+    // memcpy(&my_ipv6, NetworkUtils::getIP(this->ifr.ifr_name, AF_INET6), 16);
+    if (memcmp(&ip6_hdr->ip6_dst, NetworkUtils::getIP(this->ifr.ifr_name, AF_INET6), 16) != 0) {
         return false;
     }
-
 
     if (memcmp(&ip6_hdr->ip6_src, this->dst_ip6, 16) != 0) {
         return false;
     }
-
 
     struct nd_neighbor_advert *na_hdr = (struct nd_neighbor_advert*)(buffer + sizeof(struct ethhdr) + sizeof(struct ip6_hdr));
 

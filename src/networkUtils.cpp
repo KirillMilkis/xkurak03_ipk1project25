@@ -1,30 +1,26 @@
-#include <string>
+
 #include "networkUtils.h"
-#include <cstring>
-#include <vector>
-#include <pcap.h>
 
-#include <ifaddrs.h>
+// Set all static variaables to nullptr 
+unsigned char* NetworkUtils::mac_addr = nullptr;
+unsigned char* NetworkUtils::ip_addrv4 = nullptr;
+unsigned char* NetworkUtils::ip_addrv6 = nullptr;
 
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
-
-
-unsigned char* NetworkUtils::mac_addr = NULL;
-unsigned char* NetworkUtils::ip_addrv4 = NULL;
-unsigned char* NetworkUtils::ip_addrv6 = NULL;
-
+/**
+ * @brief Get MAC address of the interface
+ * 
+ * @param ifr Interface request structure
+ * 
+ * @return unsigned char* MAC address
+ */
 unsigned char* NetworkUtils::getMAC(struct ifreq* ifr) {
 
-    if(NetworkUtils::mac_addr == NULL) {
+    if(NetworkUtils::mac_addr == nullptr) {
 
         NetworkUtils::mac_addr = (unsigned char*)malloc(sizeof(unsigned char) * 6);
-        if(NetworkUtils::mac_addr == NULL) {
+        if(NetworkUtils::mac_addr == nullptr) {
             perror("malloc() failed");
-            return NULL;
+            return nullptr;
         }
 
         int sock = socket(AF_PACKET, SOCK_RAW, IPPROTO_RAW);
@@ -47,7 +43,14 @@ unsigned char* NetworkUtils::getMAC(struct ifreq* ifr) {
     return NetworkUtils::mac_addr;
 }
 
-
+/**
+ * @brief Get IP address of the interface
+ * 
+ * @param iface Interface name
+ * @param family Address family
+ * 
+ * @return unsigned char* IP address
+ */
 unsigned char* NetworkUtils::getIP(const char* iface, int family) {
 
     if (family == AF_INET && NetworkUtils::ip_addrv4) return ip_addrv4;
@@ -68,7 +71,6 @@ unsigned char* NetworkUtils::getIP(const char* iface, int family) {
                 struct sockaddr_in* ip4 = (struct sockaddr_in*)ifa->ifa_addr;
                 if (!NetworkUtils::ip_addrv4) NetworkUtils::ip_addrv4 = (unsigned char*)malloc(4);
                 memcpy(ip_addrv4, &ip4->sin_addr, 4);
-
                 freeifaddrs(ifaddr);
                 return NetworkUtils::ip_addrv4;
             } 
@@ -90,7 +92,14 @@ unsigned char* NetworkUtils::getIP(const char* iface, int family) {
 
 }
 
-
+/**
+ * @brief Calculate checksum of the header
+ * 
+ * @param b Packet
+ * @param len Length of the header
+ * 
+ * @return unsigned short Checksum
+ */
 unsigned short NetworkUtils::checksum(void *b, int len) {    
     unsigned short *buf = (unsigned short*)b;
     unsigned int sum = 0;
@@ -111,7 +120,13 @@ unsigned short NetworkUtils::checksum(void *b, int len) {
     return result;
 }
 
-
+/**
+ * @brief Convert MAC address to string
+ * 
+ * @param mac MAC address as unsigned char*
+ * 
+ * @return std::string MAC address as string
+ */
 std::string NetworkUtils::macToString(unsigned char* mac){
     char mac_c[18];
     sprintf(mac_c, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
@@ -119,7 +134,14 @@ std::string NetworkUtils::macToString(unsigned char* mac){
     return std::string(mac_c);
 }
 
-
+/**
+ * @brief Convert IP address to string
+ * 
+ * @param ip IP address as unsigned char*
+ * @param family Address family to determine the IP version
+ * 
+ * @return std::string IP address as string
+ */
 std::string NetworkUtils::ipToString(const unsigned char* ip, int family) {
     char ip_c[INET6_ADDRSTRLEN];
 
@@ -136,6 +158,15 @@ std::string NetworkUtils::ipToString(const unsigned char* ip, int family) {
 
 #include <sstream>
 
+
+/**
+ * @brief Convert MAC address string to bytes
+ * 
+ * @param macStr MAC address as string
+ * @param macBytes MAC address as unsigned char*
+ * 
+ * @return bool True if conversion was successful, false otherwise
+ */
 bool NetworkUtils::macStringToBytes(const std::string& macStr, unsigned char* macBytes) {
     std::istringstream iss(macStr);
     std::vector<int> bytes;
@@ -157,6 +188,11 @@ bool NetworkUtils::macStringToBytes(const std::string& macStr, unsigned char* ma
     return true;
 }
 
+/**
+ * @brief Get all interfaces
+ * 
+ * @return pcap_if_t* All interfaces
+ */
 pcap_if_t* NetworkUtils::get_interfaces() {
     pcap_if_t *allinfs;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -169,10 +205,14 @@ pcap_if_t* NetworkUtils::get_interfaces() {
     return allinfs;
 }
 
-int NetworkUtils::print_active_interfaces() {
+/**
+ * @brief Print all active interfaces
+ * 
+ * @return int 0 if successful
+ */
+void NetworkUtils::print_active_interfaces() {
     pcap_if_t *alldevsp;
     alldevsp = NetworkUtils::get_interfaces();
-    alldevsp = NetworkUtils::get_interrfaces();
 
      while(alldevsp != NULL) {
         std::cout << alldevsp->name << std::endl;
@@ -189,5 +229,4 @@ int NetworkUtils::print_active_interfaces() {
     
     pcap_freealldevs(alldevsp);
 
-    return 0;
 }

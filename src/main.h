@@ -17,37 +17,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
-
 #include <iostream>
 #include <libnet.h>
-#include <pcap.h>
-#include <thread>
-#include <future>
-#include <chrono>
-#include <atomic>
-
 #include <vector>
 
 #include "transportHandler.h"
+#include "networkScanner.h"
+//  https://cfengine.com/blog/2021/optional-arguments-with-getopt-long/
 
-std::map<uint8_t, std::pair<uint8_t, uint8_t>> protocol_rules = {
-    {AF_INET, {1, 2}},
-    {AF_INET6, {3, 4}},
-};
+// #define OPTIONAL_ARGUMENT_IS_PRESENT \
+//     ((optarg == NULL && optind < argc && argv[optind][0] != '-') \
+//      ? (bool) (optarg = argv[optind++]) \
+//      : (optarg != NULL))
 
-// https://cfengine.com/blog/2021/optional-arguments-with-getopt-long/
-#define OPTIONAL_ARGUMENT_IS_PRESENT \
-    ((optarg == NULL && optind < argc && argv[optind][0] != '-') \
-     ? (bool) (optarg = argv[optind++]) \
-     : (optarg != NULL))
-
-
-typedef struct eth_hdr{
-    unsigned char dest[6];
-    unsigned char src[6];
-    unsigned short type;
-} ETH_HDR;
-
+/**
+ * @brief Structure to process program oiptions in getopt_long function
+ */
 static struct option long_options[] = {
     {"interface", optional_argument, NULL, 'i'},
     {"wait", optional_argument, NULL, 'w'},
@@ -56,14 +41,44 @@ static struct option long_options[] = {
     {0, 0, 0, 0}
 };
 
+/**
+ * @brief Structure for storing program options
+ */
 typedef struct options{
     std::string interface;
     long int timeout;
     std::vector<std::string> subnet;
-
 } Options;
 
+/**
+ * @brief Function that handle different interrupt signals like Ctrl + C
+ * 
+ * @param signum 
+ * 
+ * @return void
+ */
+void interrupt_sniffer(int signum);
 
+/**
+ * @brief Function that parse arguments from command line
+ * 
+ * @param opts
+ * @param argc
+ * @param argv
+ * 
+ * @return void
+ */
+void parse_arguments(Options* opts, int argc, char *argv[]);
+
+/**
+ * @brief Main function
+ * 
+ * @param argc
+ * @param argv
+ * 
+ * @return int
+ */
+int main(int argc, char *argv[]);
 
 
 #endif // MAIN_H

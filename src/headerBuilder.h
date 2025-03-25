@@ -6,24 +6,19 @@
 #include <array>
 #include <vector>
 #include <cstdio>
-#include <sys/ioctl.h>
-#include <cstring>
-#include <arpa/inet.h>
-#include <netinet/ip.h> // for iphdr
-#include <unistd.h>
-#include <netinet/ip_icmp.h>
-#include <netinet/ether.h>
-#include <netinet/if_ether.h>
-#include <net/if.h> // for struct ifreq
+#include <arpa/inet.h> 
 #include "networkUtils.h"
-#include <netinet/ip6.h>
-#include <netinet/icmp6.h>
-
-// #define IP4_HDR_LEN 20
-// #define ICMP_HDR_LEN 8
-// #define ARP_HDR_LEN 28
-// #define ICMP6_HDR_LEN 32 
-// #define IP6_HDR_LEN 40
+#include <sys/ioctl.h> 
+#include <cstring>  
+#include <netinet/ip.h> 
+#include <unistd.h> 
+#include <netinet/ip_icmp.h> 
+#include <netinet/ether.h> 
+#include <netinet/if_ether.h> 
+#include <net/if.h> 
+#include "networkUtils.h" 
+#include <netinet/ip6.h> 
+#include <netinet/icmp6.h> 
 
 
 typedef struct ARP_Header {
@@ -38,7 +33,6 @@ typedef struct ARP_Header {
     uint8_t ar_tha[6]; // Target MAC address
     uint8_t ar_tip[4]; // Target IP address
 } ARP_HDR;
-
 
 typedef struct icmp_hdr {
     unsigned char type;

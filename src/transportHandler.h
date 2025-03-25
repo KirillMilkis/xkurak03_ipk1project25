@@ -38,7 +38,7 @@ class TransportHandler {
 
     public:
 
-        TransportHandler(const std::string& iface, int protocol) : iface(iface), protocol(protocol) {
+        TransportHandler(const std::string& iface, int protocol, const unsigned char* ipaddr, const unsigned char* dst_mac) : iface(iface), protocol(protocol) {
 
             memset(this->ifr.ifr_name, 0, IFNAMSIZ);
 
@@ -55,7 +55,22 @@ class TransportHandler {
             if(buffer == NULL) {
                 perror("malloc() failed");
                 exit(EXIT_FAILURE);
+
             }
+
+            memcpy(this->src_ip, this->networkUtils.getIP(iface.c_str(), AF_INET), 4);
+            memcpy(this->src_mac, this->networkUtils.getMAC(&ifr), 6);
+
+            if(this->protocol == ARP || this->protocol == ICMP) {
+                memcpy(this->dst_ip, ipaddr, 4);
+            } else if(this->protocol == ICMPv6 || this->protocol == NDP) {
+                memcpy(this->dst_ip6, ipaddr, 16);
+            }
+
+            if(dst_mac != nullptr) {
+                memcpy(this->dst_mac, dst_mac, 6);
+            }
+
 
         }
 
