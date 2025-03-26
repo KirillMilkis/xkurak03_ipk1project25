@@ -1,4 +1,9 @@
-
+/*
+ * File: networkUtils.cpp
+ * Author: Kirill Kurakov <xkurak03>
+ * Date Created: 
+ * Note:
+ */
 #include "networkUtils.h"
 
 // Set all static variaables to nullptr 
@@ -84,6 +89,12 @@ unsigned char* NetworkUtils::getIP(const char* iface, int family) {
           
             
         }
+    }
+
+    // Check if interface exitsts
+    if(NetworkUtils::ip_addrv4 == nullptr && NetworkUtils::ip_addrv6 == nullptr){
+        std::cout << "Ip in this interface not found " << std::endl; //
+        exit(1);
     }
 
     freeifaddrs(ifaddr);

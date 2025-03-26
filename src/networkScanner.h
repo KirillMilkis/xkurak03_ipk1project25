@@ -1,4 +1,9 @@
-
+/*
+ * File: networkScanner.h
+ * Author: Kirill Kurakov <xkurak03>
+ * Date Created: 
+ * Note:
+ */
 #include "ipManager.h"
 #include "threadPool.h"
 #include "transportHandler.h"

@@ -1,6 +1,11 @@
-
-#ifndef MAIN_H
-#define MAIN_H
+/*
+ * File: ipkl2l3scan.h
+ * Author: Kirill Kurakov <xkurak03>
+ * Date Created: 
+ * Note:
+ */
+#ifndef IPKL2L3SCAN_H
+#define IPKL2L3SCAN_H
 
 #include <map>
 #include "ipManager.h"
@@ -23,12 +28,6 @@
 
 #include "transportHandler.h"
 #include "networkScanner.h"
-//  https://cfengine.com/blog/2021/optional-arguments-with-getopt-long/
-
-// #define OPTIONAL_ARGUMENT_IS_PRESENT \
-//     ((optarg == NULL && optind < argc && argv[optind][0] != '-') \
-//      ? (bool) (optarg = argv[optind++]) \
-//      : (optarg != NULL))
 
 /**
  * @brief Structure to process program oiptions in getopt_long function
@@ -49,6 +48,13 @@ typedef struct options{
     long int timeout;
     std::vector<std::string> subnet;
 } Options;
+
+/**
+ * @brief Function that print help message
+ * 
+ * @return void
+ */
+void print_help();
 
 /**
  * @brief Function that handle different interrupt signals like Ctrl + C
@@ -81,4 +87,4 @@ void parse_arguments(Options* opts, int argc, char *argv[]);
 int main(int argc, char *argv[]);
 
 
-#endif // MAIN_H
+#endif // IPKL2L3SCAN_H

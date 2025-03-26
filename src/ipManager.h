@@ -1,4 +1,9 @@
-
+/*
+ * File: ipManager.h
+ * Author: Kirill Kurakov <xkurak03>
+ * Date Created: 
+ * Note:
+ */
 #ifndef IPMANAGER_H
 #define IPMANAGER_H
 
@@ -280,6 +285,16 @@ class IpManager {
          * @return bool True if successful, false otherwise
          */
         bool printSubnetList(std::vector<std::string> subnets_to_print, int ip_len, int ip_type);
+
+        /**
+         * @brief Check if the IP address is the last one in the subnet
+         * 
+         * @param current_ip_copy Current IP address
+         * 
+         * @return bool True if it is the last IP address, false otherwise
+         */
+        template <typename T, size_t N>
+        bool checkIfLastIp(std::array<T, N> current_ip_copy, std::array<T, N> network_ip, std::array<T, N> current_mask);
 };
 
 #endif // IPMANAGER_H

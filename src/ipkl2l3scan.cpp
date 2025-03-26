@@ -1,5 +1,10 @@
-
-#include "main.h"
+/*
+ * File: ipkl2l3scan.cpp
+ * Author: Kirill Kurakov <xkurak03>
+ * Date Created: 
+ * Note:
+ */
+#include "ipkl2l3scan.h"
 
 /**
  * @brief Function that handle different interrupt signals like Ctrl + C
@@ -12,6 +17,14 @@ void interrupt_sniffer(int signum){
     (void)signum;
     printf("Interrupt signal received. Exiting...\n");
     exit(EXIT_SUCCESS);
+}
+/**
+ * @brief Function that print help message
+ * 
+ * @return void
+ */
+void print_help(){
+    fprintf(stderr, "Usage: %s [-i interface | --interface interface] {-w timeout} [-s ipv4-subnet | -s ipv6-subnet | --subnet ipv4-subnet | --subnet ipv6-subnet]\n", "ipkl2l3scan");
 }
 
 /**
@@ -57,9 +70,9 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
                 }
                 break;
             case 'h':
-                fprintf(stderr, "Usage: %s [-i interface | --interface interface] {-w timeout} [-s ipv4-subnet | -s ipv6-subnet | --subnet ipv4-subnet | --subnet ipv6-subnet]\n", argv[0]);
+                print_help();
                 exit(EXIT_SUCCESS);
-                case '?':
+            case '?':
                 fprintf(stderr, "Unknown option: %s\n", argv[optind - 1]);
                 break;
             case ':':
@@ -71,6 +84,7 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
     // If subnet is not specified, does not have sense to run the program
     if(opts->subnet.empty()) {
         fprintf(stderr, "No subnet specified\n");
+        print_help();
         exit(EXIT_FAILURE);
     }
 
@@ -84,6 +98,7 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
     // If timeout is negative, does not make sense
     if(opts->timeout < 0) {
         fprintf(stderr, "Invalid timeout value\n");
+        print_help();
         exit(EXIT_FAILURE);
     }
 

@@ -1,4 +1,9 @@
-
+/*
+ * File: networkScanner.cpp
+ * Author: Kirill Kurakov <xkurak03>
+ * Date Created: 
+ * Note:
+ */
 #include "networkScanner.h"
 
 /**
@@ -183,9 +188,17 @@ int NetworkScanner::printResults(std::map<std::string, std::string> ip_mac_map, 
         // |, or icmp OK| or |, icmp FAIL|
         printf(", ");
         if(ip_icmp_reply_map[ip]){
-            printf("icmp OK\n");
+            if(ip_type == AF_INET){
+                printf("icmpv4 OK\n");
+            } else if(ip_type == AF_INET6){
+                printf("icmpv6 OK\n");
+            }
         } else {
-            printf("icmp FAIL\n");
+            if(ip_type == AF_INET){
+                printf("icmpv4 FAIL\n");
+            } else if(ip_type == AF_INET6){
+                printf("icmpv6 FAIL\n");
+            }
         }
 
     }

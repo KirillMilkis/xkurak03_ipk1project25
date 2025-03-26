@@ -1,5 +1,9 @@
-
-
+/*
+ * File: ipManager.cpp
+ * Author: Kirill Kurakov <xkurak03>
+ * Date Created: 
+ * Note:
+ */
 #include "ipManager.h"
 
 /**
@@ -71,7 +75,7 @@ bool IpManager::checkSubnet(std::string subnet_mask, std::string subnet_addr, in
 bool IpManager::printSubnetList(std::vector<std::string> subnets_to_print, int ip_len, int ip_type) { //
     
     int del_place;
-    int ip_count;
+    int ip_count = 0;
 
     for(std::string subnet : subnets_to_print){
 
@@ -82,11 +86,15 @@ bool IpManager::printSubnetList(std::vector<std::string> subnets_to_print, int i
 
         if(!this->checkSubnet(subnet_mask, subnet_addr, ip_type)) return false; 
 
+        // if it is Ipv4 there are 2 adresses reserved for the network and broadcast
+        if (ip_type == AF_INET) ip_count = ip_count - 2;
+
         // Calculate the number of IP addresses in the subnet
         // 32 or 128 means that mask is not specified, so there is only one IP address
-        // otherwise = (IP_LEN - subnet_mask)^2 - 2
+        // otherwise = (IP_LEN - subnet_mask)^2
         ip_count = (std::stoi(subnet_mask) == 32 || std::stoi(subnet_mask) == 128) ? 1 
-                      : (static_cast<int>(std::pow(2, ip_len - std::stoi(subnet_mask))) - 2);
+                      : ip_count + (static_cast<int>(std::pow(2, ip_len - std::stoi(subnet_mask))));
+
         
         printf("%s %d\n", subnet_addr.c_str(), ip_count);
     }
@@ -101,7 +109,7 @@ bool IpManager::printSubnetList(std::vector<std::string> subnets_to_print, int i
  */
 void IpManager::printAllSubnets(){
 
-    printf("Scanning ranges: \n");
+    printf("Scanning ranges:\n");
 
     // Separate function to print subnets for IPv4 and IPv6
     if(!this->printSubnetList(this->ipv4_subnets, IPV4_LEN, AF_INET)) exit(EXIT_FAILURE);
@@ -191,7 +199,7 @@ bool IpManager::calculateIp(std::array<T, N>& current_ip, std::array<T, N>& netw
         std::string subnet_addr = (del_place ==  static_cast<int>(std::string::npos)) ? this->current_subnet : this->current_subnet.substr(0, del_place);
 
         // Calculate the mask
-        this->calculateMask<N>(subnet_mask);
+        current_mask = this->calculateMask<T,N>(subnet_mask);
 
         current_ip = this->stringToBytes<N>(subnet_addr);
         // Network IP = current IP & current mask
@@ -200,8 +208,9 @@ bool IpManager::calculateIp(std::array<T, N>& current_ip, std::array<T, N>& netw
 
         // If the Ip is not alone(without specified mask), first address is network address + 1;
         if(!std::all_of(current_mask.begin(), current_mask.end(), [](unsigned char c){ return c == 0xFF; })) {
-
-            this->incrementIP(current_ip);
+            if(!this->is_ipv6){
+                this->incrementIP(current_ip);
+            }
 
         }
 
@@ -212,11 +221,31 @@ bool IpManager::calculateIp(std::array<T, N>& current_ip, std::array<T, N>& netw
         // If it is not first IP, increment the current IP
         this->incrementIP(current_ip);
         // Test if the IP is in the subnet (IP & MASK == NETWORK IP & MASK). If it is not overflowed to the mask bits
-        if(this->biteAND(network_ip, current_mask) != this->biteAND(current_ip, current_mask)) {
-            return false;
-        }
+        if(!this->checkIfLastIp(current_ip, network_ip, current_mask)) return false;
+        
         // Check if it is 255.255.255.255 or FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF
         if(this->isOver()) return false;
+    }
+
+    return true;
+}
+
+/**
+ * @brief Check if the IP address is the last one in the subnet
+ * 
+ * @param current_ip_copy Current IP address
+ * 
+ * @return bool True if it is the last IP address, false otherwise
+ */
+template <typename T, size_t N>
+bool IpManager::checkIfLastIp(std::array<T, N> current_ip_copy, std::array<T, N> network_ip, std::array<T, N> current_mask){
+    // If IPv4 increment ip one more time to check that it is not the last available Ip, because last available is reserved for broadcast
+    if(!this->is_ipv6){
+        this->incrementIP(current_ip_copy);
+    }
+
+    if(this->biteAND(network_ip, current_mask) != this->biteAND(current_ip_copy, current_mask)) {
+        return false;
     }
 
     return true;
@@ -233,7 +262,7 @@ template <typename T, size_t N>
 std::array<T, N> IpManager::calculateMask(std::string subnet_mask) {
     std::array<T, N> mask;
     int maskBits = std::stoi(subnet_mask);
-    for (int i = 0; i < N; i++) {
+    for (size_t i = 0; i < N; i++) {
         if (maskBits >= 8) {
             mask[i] = 0xFF;
             maskBits -= 8;

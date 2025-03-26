@@ -1,7 +1,10 @@
-
-
-
-#include "headerBuilder.h" // Used for HeaderBuilder class
+/*
+ * File: headerBuilder.cpp
+ * Author: Kirill Kurakov <xkurak03>
+ * Date Created: 
+ * Note:
+ */
+#include "headerBuilder.h" 
 
 /**
  * @brief Construct a new Ethernet header

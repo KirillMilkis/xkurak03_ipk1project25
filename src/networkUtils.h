@@ -1,11 +1,9 @@
-
-/**
- * @file networkUtils.h
- * @author Kirill Kurakov <xkurak03>
- * @date [Creation Date]
- * @brief Network-related utilities
+/*
+ * File: networkUtils.h
+ * Author: Kirill Kurakov <xkurak03>
+ * Date Created: 
+ * Note:
  */
-
 #ifndef NETWORKUTILS_H
 #define NETWORKUTILS_H
 

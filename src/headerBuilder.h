@@ -1,3 +1,9 @@
+/*
+ * File: headerBuilder.h
+ * Author: Kirill Kurakov <xkurak03>
+ * Date Created: 
+ * Note:
+ */
 #ifndef HEADERBUILDER_H
 #define HEADERBUILDER_H
 
@@ -7,7 +13,6 @@
 #include <vector>
 #include <cstdio>
 #include <arpa/inet.h> 
-#include "networkUtils.h"
 #include <sys/ioctl.h> 
 #include <cstring>  
 #include <netinet/ip.h> 
@@ -16,9 +21,10 @@
 #include <netinet/ether.h> 
 #include <netinet/if_ether.h> 
 #include <net/if.h> 
-#include "networkUtils.h" 
 #include <netinet/ip6.h> 
 #include <netinet/icmp6.h> 
+
+#include "networkUtils.h"
 
 
 typedef struct ARP_Header {
