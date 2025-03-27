@@ -41,7 +41,7 @@ This tool is useful for network administrators and security professionals who ne
 
 ### UML Class Diagram
 
-![UML Class Diagram](UML_class.png)
+![UML Class Diagram](img/UML_class.png)
 
 ### Diagram Description
 
@@ -85,17 +85,17 @@ sudo ./ipk-l2l3-scan -i enp0s3 -w 1000 -s 10.0.2.2/29
 
 ```
 Scanning ranges:
-10.0.2.2 6
+10.0.2.2/29 6
 
 10.0.2.1 arp FAIL, icmp FAIL
-10.0.2.2 arp (52-55-0a-00-02-02), icmp OK
-10.0.2.3 arp (52-55-0a-00-02-03), icmp OK
+10.0.2.2 arp OK (52-55-0a-00-02-02), icmp OK
+10.0.2.3 arp OK (52-55-0a-00-02-03), icmp OK
 10.0.2.4 arp FAIL, icmp FAIL
 10.0.2.5 arp FAIL, icmp FAIL
 10.0.2.6 arp FAIL, icmp FAIL
 ```
 
-![Wireshark Screenshot](Wireshark1.png)
+![Wireshark Screenshot](img/Wireshark1.png)
 
 #### Analysis:
 
@@ -119,18 +119,24 @@ sudo ./ipk-l2l3-scan -i enp0s3 -w 1000 -s fe80::2/123
 
 ```
 Scanning ranges:
-fe80::2 32
+fe80::2/123 32
 
 fe80:: ndp FAIL, icmp FAIL
 fe80::1 ndp FAIL, icmp FAIL
+fe80::10 ndp FAIL, icmp FAIL
+fe80::11 ndp FAIL, icmp FAIL
+fe80::12 ndp FAIL, icmp FAIL
+fe80::13 ndp FAIL, icmp FAIL
+fe80::14 ndp FAIL, icmp FAIL
+fe80::15 ndp FAIL, icmp FAIL
 ...
-fe80::2 ndp (52-56-00-00-00-02), icmp OK
-fe80::3 ndp (52-56-00-00-00-03), icmp OK
+fe80::2 ndp OK (52-56-00-00-00-02), icmp OK
+fe80::3 ndp OK (52-56-00-00-00-03), icmp OK
 ...
 fe80::1f ndp FAIL, icmp FAIL
 ```
 
-![Wireshark Screenshot](Wireshark2.png)
+![Wireshark Screenshot](img/Wireshark2.png)
 
 #### Analysis:
 
@@ -155,13 +161,39 @@ sudo ./ipk-l2l3-scan -i enp0s3 -w 1 -s 10.0.2.2/22
 
 ```
 Scanning ranges:
-10.0.2.2 1022
+10.0.2.2/22 1022
 
 10.0.0.1 arp FAIL, icmp FAIL
 10.0.0.10 arp FAIL, icmp FAIL
+10.0.0.100 arp FAIL, icmp FAIL
+10.0.0.101 arp FAIL, icmp FAIL
+10.0.0.102 arp FAIL, icmp FAIL
+10.0.0.103 arp FAIL, icmp FAIL
+10.0.0.104 arp FAIL, icmp FAIL
+10.0.0.105 arp FAIL, icmp FAIL
+10.0.0.106 arp FAIL, icmp FAIL
+10.0.0.107 arp FAIL, icmp FAIL
+10.0.0.108 arp FAIL, icmp FAIL
+10.0.0.109 arp FAIL, icmp FAIL
+10.0.0.11 arp FAIL, icmp FAIL
 ...
-10.0.2.3 arp (52-55-0a-00-02-03), icmp OK
+10.0.2.27 arp FAIL, icmp FAIL
+10.0.2.28 arp FAIL, icmp FAIL
+10.0.2.29 arp FAIL, icmp FAIL
+10.0.2.3 arp OK (52-55-0a-00-02-03), icmp OK
+10.0.2.30 arp FAIL, icmp FAIL
+10.0.2.31 arp FAIL, icmp FAIL
+10.0.2.32 arp FAIL, icmp FAIL
+10.0.2.33 arp FAIL, icmp FAIL
+10.0.2.34 arp FAIL, icmp FAIL
 ...
+10.0.3.92 arp FAIL, icmp FAIL
+10.0.3.93 arp FAIL, icmp FAIL
+10.0.3.94 arp FAIL, icmp FAIL
+10.0.3.95 arp FAIL, icmp FAIL
+10.0.3.96 arp FAIL, icmp FAIL
+10.0.3.97 arp FAIL, icmp FAIL
+10.0.3.98 arp FAIL, icmp FAIL
 10.0.3.99 arp FAIL, icmp FAIL
 ```
 
