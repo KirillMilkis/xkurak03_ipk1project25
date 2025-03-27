@@ -1,7 +1,7 @@
 /*
  * File: networkScanner.cpp
  * Author: Kirill Kurakov <xkurak03>
- * Date Created: 
+ * Date Created: XX.03.2025
  * Note:
  */
 #include "networkScanner.h"
@@ -180,6 +180,7 @@ int NetworkScanner::printResults(std::map<std::string, std::string> ip_mac_map, 
     
         // |(MAC address)| or |FAIL|
         if(mac != "not found"){
+            printf("OK ");
             sscanf(mac.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &mac_c[0], &mac_c[1], &mac_c[2], &mac_c[3], &mac_c[4], &mac_c[5]);
             printf("(%02x-%02x-%02x-%02x-%02x-%02x)", mac_c[0], mac_c[1], mac_c[2], mac_c[3], mac_c[4], mac_c[5]);
         } else {

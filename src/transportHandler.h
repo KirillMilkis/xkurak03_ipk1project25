@@ -1,7 +1,7 @@
 /*
  * File: transportHandler.h
  * Author: Kirill Kurakov <xkurak03>
- * Date Created: 
+ * Date Created: XX.03.2025
  * Note:
  */
 #ifndef TRANSPORTHANDLER_H
@@ -11,7 +11,6 @@
 #include <cstring>
 #include <cstdlib>
 #include <netinet/ip.h>
-#include "networkUtils.h"
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <linux/if_packet.h>
@@ -20,6 +19,7 @@
 #include <cstring>
 
 #include "headerBuilder.h"
+#include "networkUtils.h"
 
 #define SUCCESS_SENDED 3
 #define SUCCESS_RECEIVED 4

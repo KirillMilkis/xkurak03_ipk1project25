@@ -1,7 +1,7 @@
 /*
  * File: networkUtils.cpp
  * Author: Kirill Kurakov <xkurak03>
- * Date Created: 
+ * Date Created: XX.03.2025
  * Note:
  */
 #include "networkUtils.h"
@@ -224,7 +224,7 @@ pcap_if_t* NetworkUtils::get_interfaces() {
 void NetworkUtils::print_active_interfaces() {
     pcap_if_t *alldevsp;
     alldevsp = NetworkUtils::get_interfaces();
-
+    std::cout << "Active interfaces:" << std::endl;
      while(alldevsp != NULL) {
         std::cout << alldevsp->name << std::endl;
 

@@ -1,7 +1,7 @@
 /*
  * File: ipkl2l3scan.cpp
  * Author: Kirill Kurakov <xkurak03>
- * Date Created: 
+ * Date Created: XX.03.2025
  * Note:
  */
 #include "ipkl2l3scan.h"
@@ -80,16 +80,21 @@ void parse_arguments(Options* opts, int argc, char *argv[]){
                 break;
         }
     }
-
+    // If no interface and no subnet is specified, print all active interfaces and exit
+    if(opts->interface.empty() && opts->subnet.empty()) {
+        print_help();
+        fprintf(stderr, "No interface or subnet specified\n");
+        NetworkUtils::print_active_interfaces();
+        exit(EXIT_FAILURE);
+    } 
     // If subnet is not specified, does not have sense to run the program
-    if(opts->subnet.empty()) {
+    else if(opts->subnet.empty()) {
         fprintf(stderr, "No subnet specified\n");
         print_help();
         exit(EXIT_FAILURE);
     }
-
     // If no interface is specified, print all active interfaces and exit
-    if(opts->interface.empty()) {
+    else if(opts->interface.empty()) {
         NetworkUtils::print_active_interfaces();
         fprintf(stderr, "No interface specified\n");
         exit(EXIT_FAILURE);

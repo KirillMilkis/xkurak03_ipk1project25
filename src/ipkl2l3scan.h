@@ -1,15 +1,14 @@
 /*
  * File: ipkl2l3scan.h
  * Author: Kirill Kurakov <xkurak03>
- * Date Created: 
+ * Date Created: XX.03.2025
  * Note:
  */
 #ifndef IPKL2L3SCAN_H
 #define IPKL2L3SCAN_H
 
 #include <map>
-#include "ipManager.h"
-#include "transportHandler.h"
+
 
 #define no_argument 0
 #define required_argument 1
@@ -28,6 +27,7 @@
 
 #include "transportHandler.h"
 #include "networkScanner.h"
+#include "ipManager.h"
 
 /**
  * @brief Structure to process program oiptions in getopt_long function

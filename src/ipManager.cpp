@@ -1,7 +1,7 @@
 /*
  * File: ipManager.cpp
  * Author: Kirill Kurakov <xkurak03>
- * Date Created: 
+ * Date Created: XX.03.2025
  * Note:
  */
 #include "ipManager.h"
@@ -96,7 +96,7 @@ bool IpManager::printSubnetList(std::vector<std::string> subnets_to_print, int i
                       : ip_count + (static_cast<int>(std::pow(2, ip_len - std::stoi(subnet_mask))));
 
         
-        printf("%s %d\n", subnet_addr.c_str(), ip_count);
+        printf("%s %d\n", subnet.c_str(), ip_count);
     }
 
     return true;
